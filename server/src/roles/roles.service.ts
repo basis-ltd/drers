@@ -1,0 +1,31 @@
+import { Injectable } from '@nestjs/common';
+import { InjectRepository } from '@nestjs/typeorm';
+import { Repository } from 'typeorm';
+import { Role } from './entities/role.entity';
+import { Permission } from './entities/permission.entity';
+
+@Injectable()
+export class RolesService {
+  constructor(
+    @InjectRepository(Role)
+    private readonly roleRepository: Repository<Role>,
+    @InjectRepository(Permission)
+    private readonly permissionRepository: Repository<Permission>,
+  ) {}
+
+  findAllRoles(): Promise<Role[]> {
+    return this.roleRepository.find();
+  }
+
+  findOneRole(id: string): Promise<Role | null> {
+    return this.roleRepository.findOneBy({ id });
+  }
+
+  findAllPermissions(): Promise<Permission[]> {
+    return this.permissionRepository.find({ order: { module: 'ASC', code: 'ASC' } });
+  }
+
+  findOnePermission(id: string): Promise<Permission | null> {
+    return this.permissionRepository.findOneBy({ id });
+  }
+}
