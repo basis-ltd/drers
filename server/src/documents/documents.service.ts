@@ -7,6 +7,7 @@ import { ApplicationsService } from '../applications/services/applications.servi
 import { RegisterDocumentDto } from './dto/register-document.dto';
 import { createHash } from 'crypto';
 import { DocumentOcrStatus } from './enums/document-ocr-status.enum';
+import { OcrService } from './ocr/ocr.service';
 
 @Injectable()
 export class DocumentsService {
@@ -15,6 +16,7 @@ export class DocumentsService {
     private readonly documentRepo: Repository<Document>,
     private readonly applicationsService: ApplicationsService,
     private readonly configService: ConfigService,
+    private readonly ocrService: OcrService,
   ) {}
 
   async getUploadSignature(
@@ -111,6 +113,19 @@ export class DocumentsService {
       where: { applicationId, isCurrentVersion: true },
       order: { createdAt: 'ASC' },
     });
+  }
+
+  async retryOcr(
+    applicationId: string,
+    docId: string,
+    userId: string,
+  ): Promise<Document> {
+    await this.applicationsService.findOneOrFail(applicationId, userId);
+    const doc = await this.documentRepo.findOne({
+      where: { id: docId, applicationId },
+    });
+    if (!doc) throw new NotFoundException('Document not found');
+    return this.ocrService.resetOcr(doc.id);
   }
 
   async remove(applicationId: string, docId: string, userId: string): Promise<void> {
