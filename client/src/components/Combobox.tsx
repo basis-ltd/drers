@@ -12,7 +12,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
-import { faCaretDown, faCheck, faCircle } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { forwardRef, useState } from "react";
 import { SkeletonLoader } from "./Loader";
@@ -107,14 +107,19 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
           <PopoverTrigger
             disabled={isLoading || readOnly}
             className={cn(
-              "flex h-9 min-h-9 w-full items-center justify-between rounded-md border border-primary/20 bg-white px-3 text-left outline-none transition-[color,border-color,box-shadow] duration-200 hover:bg-background/70 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
-              inputClassName || "text-[11px] lg:text-[12px] font-light leading-tight",
-              readOnly && "cursor-default bg-background",
+              "flex h-9 cursor-pointer min-h-9 w-full items-center justify-between rounded-md border border-primary/20 bg-white px-3 text-left outline-none transition-[color,border-color,box-shadow] duration-200 hover:bg-background/70 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+              inputClassName ||
+                "text-[11px] lg:text-[12px] font-light leading-tight",
+              readOnly && "cursor-default bg-background pointer-events-none",
               className,
             )}
           >
             {isLoading ? (
-              <SkeletonLoader type="input" height="2.25rem" className="w-full" />
+              <SkeletonLoader
+                type="input"
+                height="2.25rem"
+                className="w-full"
+              />
             ) : (
               <>
                 <span
@@ -126,7 +131,8 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                           "text-[11px] lg:text-[12px] font-light text-primary"
                       : cn(
                           "text-primary/70",
-                          inputClassName || "text-[11px] lg:text-[12px] font-light",
+                          inputClassName ||
+                            "text-[11px] lg:text-[12px] font-light",
                         ),
                   )}
                 >
@@ -151,7 +157,8 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
               <CommandList ref={ref} className="w-full p-1">
                 <CommandEmpty
                   className={`w-full text-center text-primary ${
-                    optionsClassName || "text-[11px] lg:text-[12px] py-2 font-light"
+                    optionsClassName ||
+                    "text-[11px] lg:text-[12px] py-2 font-light"
                   }`}
                 >
                   No option found.
@@ -175,15 +182,12 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                         className={`${
                           option?.disabled && `text-gray-400 cursor-not-allowed`
                         } truncate max-w-[calc(100%-24px)] ${
-                          optionsClassName || "text-[11px] lg:text-[12px] font-light text-primary"
+                          optionsClassName ||
+                          "text-[11px] lg:text-[12px] font-light text-primary"
                         }`}
                       >
                         {option.label}
                       </p>
-                      <FontAwesomeIcon
-                        icon={selectedValue === option.value ? faCheck : faCircle}
-                        className="ml-auto h-3.5 w-3.5 flex-none text-primary/60"
-                      />
                     </CommandItem>
                   ))}
                 </CommandGroup>

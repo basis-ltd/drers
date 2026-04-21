@@ -23,7 +23,7 @@
   --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
 
   /* shadcn / Tailwind semantic tokens */
-  --background: oklch(1 0 0);
+  --background: oklch(0.968 0.007 247.896); /* slate-100 */
   /* Kept for components using `text-foreground`; matches headline ink */
   --foreground: oklch(0.145 0 0);
 

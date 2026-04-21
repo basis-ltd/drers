@@ -1,38 +1,43 @@
-import { useCallback } from 'react';
-import { useForm, useFieldArray, Controller } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import { z } from 'zod';
-import { Plus, Trash2 } from 'lucide-react';
-import { useSelector } from 'react-redux';
-import Input from '@/components/Input';
-import Select from '@/components/Select';
-import Button from '@/components/Button';
-import { selectAuthUser } from '@/features/auth/model/selectors';
-import { useUpdateTeamMutation } from '../../../api/applicationsApi';
-import { useAutoSave } from '../../../hooks/useAutoSave';
-import { PROFESSIONAL_TITLES } from '../../../constants/formSteps';
-import type { ApplicationTeam, CoInvestigator, StudySite, ProfessionalTitle } from '../../../api/types';
-import { SaveIndicator } from './Step1Details';
+import { useCallback } from "react";
+import { useForm, useFieldArray, Controller } from "react-hook-form";
+import { zodResolver } from "@hookform/resolvers/zod";
+import { z } from "zod";
+import { Plus, Trash2 } from "lucide-react";
+import { useSelector } from "react-redux";
+import Input from "@/components/Input";
+import Select from "@/components/Select";
+import Button from "@/components/Button";
+import { selectAuthUser } from "@/features/auth/model/selectors";
+import { useUpdateTeamMutation } from "../../../api/applicationsApi";
+import { useAutoSave } from "../../../hooks/useAutoSave";
+import { PROFESSIONAL_TITLES } from "../../../constants/formSteps";
+import type {
+  ApplicationTeam,
+  CoInvestigator,
+  StudySite,
+  ProfessionalTitle,
+} from "../../../api/types";
+import { SaveIndicator } from "./Step1Details";
 
 const coInvSchema = z.object({
-  title:       z.string().optional(),
-  name:        z.string().min(1, 'Name is required'),
+  title: z.string().optional(),
+  name: z.string().min(1, "Name is required"),
   institution: z.string().optional(),
-  role:        z.string().optional(),
+  role: z.string().optional(),
 });
 
 const siteSchema = z.object({
-  name:     z.string().min(1, 'Site name is required'),
+  name: z.string().min(1, "Site name is required"),
   location: z.string().optional(),
 });
 
 const schema = z.object({
   piDepartment: z.string().optional(),
   piInstitution: z.string().optional(),
-  piPhone:      z.string().optional(),
-  piNhra:       z.string().optional(),
+  piPhone: z.string().optional(),
+  piNhra: z.string().optional(),
   coInvestigators: z.array(coInvSchema),
-  studySites:      z.array(siteSchema),
+  studySites: z.array(siteSchema),
 });
 
 type FormValues = z.infer<typeof schema>;
@@ -60,16 +65,16 @@ export function Step2Team({
         data: {
           piDepartment: data.piDepartment || undefined,
           piInstitution: data.piInstitution || undefined,
-          piPhone:      data.piPhone      || undefined,
-          piNhra:       data.piNhra       || undefined,
+          piPhone: data.piPhone || undefined,
+          piNhra: data.piNhra || undefined,
           coInvestigators: data.coInvestigators.map((c) => ({
-            title:       (c.title as ProfessionalTitle) || undefined,
-            name:        c.name,
+            title: (c.title as ProfessionalTitle) || undefined,
+            name: c.name,
             institution: c.institution || undefined,
-            role:        c.role        || undefined,
+            role: c.role || undefined,
           })),
           studySites: data.studySites.map((s) => ({
-            name:     s.name,
+            name: s.name,
             location: s.location || undefined,
           })),
         },
@@ -77,45 +82,48 @@ export function Step2Team({
     [updateTeam],
   );
 
-  const { saveStatus, save } = useAutoSave<FormValues>(mutationFn, applicationId);
+  const { saveStatus, save } = useAutoSave<FormValues>(
+    mutationFn,
+    applicationId,
+  );
 
-  const { register, control, getValues, formState: { errors } } = useForm<FormValues>({
+  const { control, getValues } = useForm<FormValues>({
     resolver: zodResolver(schema),
     defaultValues: {
-      piDepartment: initialData?.piDepartment ?? '',
-      piInstitution: initialData?.piInstitution ?? '',
-      piPhone:      initialData?.piPhone      ?? '',
-      piNhra:       initialData?.piNhra       ?? '',
+      piDepartment: initialData?.piDepartment ?? "",
+      piInstitution: initialData?.piInstitution ?? "",
+      piPhone: initialData?.piPhone ?? "",
+      piNhra: initialData?.piNhra ?? "",
       coInvestigators: coInvestigators.map((c) => ({
-        title:       c.title ?? '',
-        name:        c.name,
-        institution: c.institution ?? '',
-        role:        c.role ?? '',
+        title: c.title ?? "",
+        name: c.name,
+        institution: c.institution ?? "",
+        role: c.role ?? "",
       })),
       studySites: studySites.map((s) => ({
-        name:     s.name,
-        location: s.location ?? '',
+        name: s.name,
+        location: s.location ?? "",
       })),
     },
-    mode: 'onBlur',
+    mode: "onBlur",
   });
 
   const {
     fields: coIFields,
     append: appendCoI,
     remove: removeCoI,
-  } = useFieldArray({ control, name: 'coInvestigators' });
+  } = useFieldArray({ control, name: "coInvestigators" });
 
   const {
     fields: siteFields,
     append: appendSite,
     remove: removeSite,
-  } = useFieldArray({ control, name: 'studySites' });
+  } = useFieldArray({ control, name: "studySites" });
 
   const onBlurSave = () => save(getValues());
 
   const addCoInvestigator = () => {
-    appendCoI({ title: '', name: '', institution: '', role: '' });
+    appendCoI({ title: "", name: "", institution: "", role: "" });
     setTimeout(() => save(getValues()), 0);
   };
 
@@ -125,7 +133,7 @@ export function Step2Team({
   };
 
   const addSite = () => {
-    appendSite({ name: '', location: '' });
+    appendSite({ name: "", location: "" });
     setTimeout(() => save(getValues()), 0);
   };
 
@@ -135,8 +143,8 @@ export function Step2Team({
   };
 
   const initials = user
-    ? `${user.firstName?.[0] ?? ''}${user.surname?.[0] ?? ''}`.toUpperCase()
-    : '??';
+    ? `${user.firstName?.[0] ?? ""}${user.surname?.[0] ?? ""}`.toUpperCase()
+    : "??";
 
   return (
     <form noValidate onSubmit={(e) => e.preventDefault()}>
@@ -153,7 +161,9 @@ export function Step2Team({
       <section className="space-y-7">
         {/* Principal Investigator */}
         <fieldset className="rounded-lg border border-primary/10 bg-background p-5">
-          <legend className="mb-4 text-[12px] font-semibold text-primary">Principal Investigator</legend>
+          <legend className="mb-4 text-[12px] font-semibold text-primary">
+            Principal Investigator
+          </legend>
 
           {/* PI identity chip */}
           <section className="mb-4 flex items-center gap-3 rounded-md border border-primary/10 bg-white p-3">
@@ -164,7 +174,9 @@ export function Step2Team({
               <p className="text-[12px] font-semibold text-primary">
                 {user?.firstName} {user?.surname}
               </p>
-              <p className="text-[11px] text-primary/50">Principal Investigator</p>
+              <p className="text-[11px] text-primary/50">
+                Principal Investigator
+              </p>
             </section>
             <output className="ml-auto rounded-full border border-green-200 bg-green-50 px-2.5 py-0.5 text-[10px] font-semibold text-green-700">
               From profile
@@ -172,36 +184,108 @@ export function Step2Team({
           </section>
 
           <section className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            <Input
-              label="Department / Unit"
-              placeholder="e.g. Department of Internal Medicine"
-              {...register('piDepartment', { onBlur: onBlurSave })}
+            <Controller
+              name="piDepartment"
+              control={control}
+              render={({ field: f }) => (
+                <Input
+                  label="Department / Unit"
+                  placeholder="e.g. Department of Internal Medicine"
+                  {...f}
+                  onBlur={() => {
+                    f.onBlur();
+                    onBlurSave();
+                  }}
+                />
+              )}
             />
-            <Input
-              label="Institutional Affiliation"
-              required
-              placeholder="e.g. University of Rwanda"
-              {...register('piInstitution', { onBlur: onBlurSave })}
+            <Controller
+              name="piInstitution"
+              control={control}
+              render={({ field: f }) => (
+                <Input
+                  label="Department / Unit"
+                  placeholder="e.g. Department of Internal Medicine"
+                  {...f}
+                  onBlur={() => {
+                    f.onBlur();
+                    onBlurSave();
+                  }}
+                />
+              )}
             />
-            <Input
-              label="Phone Number"
-              required
-              type="tel"
-              placeholder="+250 7XX XXX XXX"
-              errorMessage={errors.piPhone?.message}
-              {...register('piPhone', { onBlur: onBlurSave })}
+            <Controller
+              name="piPhone"
+              control={control}
+              render={({ field: f }) => (
+                <Input
+                  label="Phone Number"
+                  required
+                  type="tel"
+                  placeholder="+250 7XX XXX XXX"
+                  {...f}
+                  onBlur={() => {
+                    f.onBlur();
+                    onBlurSave();
+                  }}
+                />
+              )}
             />
-            <Input
-              label="NHRA Researcher ID"
-              placeholder="e.g. NHRA/RES/2024/XXXX"
-              {...register('piNhra', { onBlur: onBlurSave })}
+            <Controller
+              name="piNhra"
+              control={control}
+              render={({ field: f }) => (
+                <Input
+                  label="NHRA Researcher ID"
+                  placeholder="e.g. NHRA/RES/2024/XXXX"
+                  {...f}
+                  onBlur={() => {
+                    f.onBlur();
+                    onBlurSave();
+                  }}
+                />
+              )}
+            />
+            <Controller
+              name="piInstitution"
+              control={control}
+              render={({ field: f }) => (
+                <Input
+                  label="Institutional Affiliation"
+                  required
+                  placeholder="e.g. University of Rwanda"
+                  {...f}
+                  onBlur={() => {
+                    f.onBlur();
+                    onBlurSave();
+                  }}
+                />
+              )}
+            />
+            <Controller
+              name="piNhra"
+              control={control}
+              render={({ field: f }) => (
+                <Input
+                  label="NHRA Researcher ID"
+                  required
+                  placeholder="e.g. NHRA/RES/2024/XXXX"
+                  {...f}
+                  onBlur={() => {
+                    f.onBlur();
+                    onBlurSave();
+                  }}
+                />
+              )}
             />
           </section>
         </fieldset>
 
         {/* Co-Investigators */}
         <fieldset>
-          <legend className="mb-1 text-[13px] font-semibold text-primary">Co-Investigators</legend>
+          <legend className="mb-1 text-[13px] font-semibold text-primary">
+            Co-Investigators
+          </legend>
           <p className="mb-3 text-[11px] text-primary/50">
             Add all researchers who will be involved in carrying out the study.
           </p>
@@ -217,7 +301,10 @@ export function Step2Team({
                     Co-Investigator {idx + 1}
                   </p>
                   <Button
-                    onClick={() => removeCoInvestigator(idx)}
+                    onClick={(e) => {
+                      e.preventDefault();
+                      removeCoInvestigator(idx);
+                    }}
                     variant="icon"
                     value={<Trash2 className="size-3.5" aria-hidden />}
                     className="size-7 border-none text-primary/30 hover:bg-red-50 hover:text-red-500"
@@ -233,28 +320,63 @@ export function Step2Team({
                     render={({ field: f }) => (
                       <Select
                         label="Title"
-                        options={[{ value: '', label: '—' }, ...PROFESSIONAL_TITLES]}
+                        options={[
+                          { value: "all", label: "All" },
+                          ...PROFESSIONAL_TITLES,
+                        ]}
                         value={f.value}
-                        onChange={(v) => { f.onChange(v); onBlurSave(); }}
+                        onChange={(v) => {
+                          f.onChange(v);
+                          onBlurSave();
+                        }}
                       />
                     )}
                   />
-                  <Input
-                    label="Full Name"
-                    required
-                    placeholder="Full name"
-                    errorMessage={(errors.coInvestigators?.[idx] as { name?: { message?: string } })?.name?.message}
-                    {...register(`coInvestigators.${idx}.name`, { onBlur: onBlurSave })}
+                  <Controller
+                    name={`coInvestigators.${idx}.name`}
+                    control={control}
+                    render={({ field: f }) => (
+                      <Input
+                        label="Full Name"
+                        required
+                        placeholder="Full name"
+                        {...f}
+                        onBlur={() => {
+                          f.onBlur();
+                          onBlurSave();
+                        }}
+                      />
+                    )}
                   />
-                  <Input
-                    label="Institution"
-                    placeholder="Institution"
-                    {...register(`coInvestigators.${idx}.institution`, { onBlur: onBlurSave })}
+                  <Controller
+                    name={`coInvestigators.${idx}.institution`}
+                    control={control}
+                    render={({ field: f }) => (
+                      <Input
+                        label="Institution"
+                        placeholder="Institution"
+                        {...f}
+                        onBlur={() => {
+                          f.onBlur();
+                          onBlurSave();
+                        }}
+                      />
+                    )}
                   />
-                  <Input
-                    label="Role"
-                    placeholder="e.g. Statistician"
-                    {...register(`coInvestigators.${idx}.role`, { onBlur: onBlurSave })}
+                  <Controller
+                    name={`coInvestigators.${idx}.role`}
+                    control={control}
+                    render={({ field: f }) => (
+                      <Input
+                        label="Role"
+                        placeholder="e.g. Statistician"
+                        {...f}
+                        onBlur={() => {
+                          f.onBlur();
+                          onBlurSave();
+                        }}
+                      />
+                    )}
                   />
                 </section>
               </li>
@@ -272,27 +394,54 @@ export function Step2Team({
 
         {/* Study Sites */}
         <fieldset>
-          <legend className="mb-1 text-[13px] font-semibold text-primary">Study Sites</legend>
+          <legend className="mb-1 text-[13px] font-semibold text-primary">
+            Study Sites
+          </legend>
           <p className="mb-3 text-[11px] text-primary/50">
             List all facilities or locations where the study will be conducted.
           </p>
 
           <ul className="space-y-2">
             {siteFields.map((field, idx) => (
-              <li key={field.id} className="grid grid-cols-[1fr_1fr_auto] items-end gap-3">
-                <Input
-                  label={idx === 0 ? 'Site Name' : undefined}
-                  placeholder="e.g. CHUK, Kigali"
-                  errorMessage={(errors.studySites?.[idx] as { name?: { message?: string } })?.name?.message}
-                  {...register(`studySites.${idx}.name`, { onBlur: onBlurSave })}
+              <li
+                key={field.id}
+                className="grid grid-cols-[1fr_1fr_auto] items-end gap-3"
+              >
+                <Controller
+                  name={`studySites.${idx}.name`}
+                  control={control}
+                  render={({ field: f }) => (
+                    <Input
+                      label="Site Name"
+                      placeholder="e.g. CHUK, Kigali"
+                      {...f}
+                      onBlur={() => {
+                        f.onBlur();
+                        onBlurSave();
+                      }}
+                    />
+                  )}
                 />
-                <Input
-                  label={idx === 0 ? 'Location / District' : undefined}
-                  placeholder="e.g. Nyarugenge, Kigali"
-                  {...register(`studySites.${idx}.location`, { onBlur: onBlurSave })}
+                <Controller
+                  name={`studySites.${idx}.location`}
+                  control={control}
+                  render={({ field: f }) => (
+                    <Input
+                      label={idx === 0 ? "Location / District" : undefined}
+                      placeholder="e.g. Nyarugenge, Kigali"
+                      {...f}
+                      onBlur={() => {
+                        f.onBlur();
+                        onBlurSave();
+                      }}
+                    />
+                  )}
                 />
                 <Button
-                  onClick={() => removeSiteRow(idx)}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    removeSiteRow(idx);
+                  }}
                   variant="icon"
                   value={<Trash2 className="size-3.5" aria-hidden />}
                   className="mb-0.5 size-9 border-primary/15 text-primary/30 hover:border-red-200 hover:bg-red-50 hover:text-red-500"

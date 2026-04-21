@@ -93,7 +93,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         </section>
 
         <footer className="relative z-10 text-xs text-primary-foreground/55">
-          © {new Date().getFullYear()} Rwanda National Ethics Committee — Secure
+          © {new Date().getFullYear()} Rwanda National Ethics Committee | Secure
           platform
         </footer>
       </aside>

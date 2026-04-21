@@ -48,7 +48,7 @@ const TextArea: FC<TextAreaProps> = ({
   return (
     <label className="flex flex-col gap-[6px] item-start w-full">
       <p
-        className={`text-[14px] flex items-center gap-1 ${!label && 'hidden'}`}
+        className={`text-[12px] flex items-center gap-1 ${!label && 'hidden'}`}
       >
         {label}{' '}
         <span className={`${required ? 'text-red-500' : 'hidden'}`}>*</span>
@@ -60,7 +60,7 @@ const TextArea: FC<TextAreaProps> = ({
         value={value}
         readOnly={readonly}
         placeholder={placeholder}
-        className={`border-[1.5px] border-opacity-50 text-[14px] placeholder:text-[13px] border-secondary flex items-center justify-center px-4 py-[8px] w-full focus:border-[1.3px] focus:outline-hidden focus:border-primary rounded-md ${
+        className={`border-[1px] text-[14px] placeholder:text-[13px] border-primary/40 flex items-center justify-center px-4 py-[8px] w-full focus:border-[1.3px] focus:outline-hidden focus:border-primary rounded-md ${
           resize ? null : 'resize-none'
         } ${className}`}
         onChange={onChange}
