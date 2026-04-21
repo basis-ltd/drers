@@ -17,4 +17,8 @@ export class TenantsService {
   findOne(id: string): Promise<Tenant | null> {
     return this.tenantRepository.findOneBy({ id });
   }
+
+  findByCode(code: string): Promise<Tenant | null> {
+    return this.tenantRepository.findOneBy({ code });
+  }
 }

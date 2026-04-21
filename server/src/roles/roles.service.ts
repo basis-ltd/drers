@@ -3,6 +3,7 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Role } from './entities/role.entity';
 import { Permission } from './entities/permission.entity';
+import { RoleName } from '../common/enums';
 
 @Injectable()
 export class RolesService {
@@ -19,6 +20,10 @@ export class RolesService {
 
   findOneRole(id: string): Promise<Role | null> {
     return this.roleRepository.findOneBy({ id });
+  }
+
+  findRoleByName(name: RoleName): Promise<Role | null> {
+    return this.roleRepository.findOneBy({ name });
   }
 
   findAllPermissions(): Promise<Permission[]> {

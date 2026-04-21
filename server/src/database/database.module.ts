@@ -7,6 +7,8 @@ import { Role } from '../roles/entities/role.entity';
 import { Permission } from '../roles/entities/permission.entity';
 import { RolePermission } from '../roles/entities/role-permission.entity';
 import { UserTenantRole } from '../user-tenant-roles/entities/user-tenant-role.entity';
+import { PasswordResetToken } from '../auth/entities/password-reset-token.entity';
+import { RefreshToken } from '../auth/entities/refresh-token.entity';
 
 @Module({
   imports: [
@@ -20,9 +22,18 @@ import { UserTenantRole } from '../user-tenant-roles/entities/user-tenant-role.e
         username: config.get<string>('DB_USERNAME'),
         password: config.get<string>('DB_PASSWORD'),
         database: config.get<string>('DB_DATABASE'),
-        entities: [Tenant, User, Role, Permission, RolePermission, UserTenantRole],
+        entities: [
+          Tenant,
+          User,
+          Role,
+          Permission,
+          RolePermission,
+          UserTenantRole,
+          PasswordResetToken,
+          RefreshToken,
+        ],
         migrations: [__dirname + '/../../migrations/*{.ts,.js}'],
-        synchronize: false,
+        synchronize: true,
         logging: config.get<string>('NODE_ENV') !== 'production',
         migrationsRun: false,
         ssl:

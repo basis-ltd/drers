@@ -13,7 +13,12 @@ export class User extends BaseDomain {
   @Column({ type: 'varchar', length: 50, nullable: true })
   phone: string | null;
 
-  @Column({ name: 'password_hash', type: 'varchar', length: 255, select: false })
+  @Column({
+    name: 'password_hash',
+    type: 'varchar',
+    length: 255,
+    select: false,
+  })
   passwordHash: string;
 
   @Column({
@@ -33,7 +38,12 @@ export class User extends BaseDomain {
   @Column({ type: 'varchar', length: 100, nullable: true })
   nationality: string | null;
 
-  @Column({ name: 'national_id_passport', type: 'varchar', length: 100, nullable: true })
+  @Column({
+    name: 'national_id_passport',
+    type: 'varchar',
+    length: 100,
+    nullable: true,
+  })
   nationalIdPassport: string | null;
 
   @Column({ type: 'enum', enum: Gender, nullable: true })
@@ -42,7 +52,12 @@ export class User extends BaseDomain {
   @Column({ type: 'text', nullable: true })
   qualifications: string | null;
 
-  @Column({ name: 'institutional_affiliation', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'institutional_affiliation',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   institutionalAffiliation: string | null;
 
   @Column({ name: 'physical_address', type: 'text', nullable: true })
@@ -63,11 +78,33 @@ export class User extends BaseDomain {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
-  @Column({ name: 'otp_secret', type: 'varchar', length: 255, nullable: true, select: false })
+  @Column({
+    name: 'otp_secret',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    select: false,
+  })
   otpSecret: string | null;
 
   @Column({ name: 'last_login_at', type: 'timestamptz', nullable: true })
   lastLoginAt: Date | null;
+
+  @Column({
+    name: 'email_verification_token_hash',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+    select: false,
+  })
+  emailVerificationTokenHash: string | null;
+
+  @Column({
+    name: 'email_verification_expires_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
+  emailVerificationExpiresAt: Date | null;
 
   @OneToMany(() => UserTenantRole, (utr) => utr.user)
   userTenantRoles: UserTenantRole[];

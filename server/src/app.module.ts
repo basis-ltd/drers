@@ -7,6 +7,7 @@ import { TenantsModule } from './tenants/tenants.module';
 import { UsersModule } from './users/users.module';
 import { RolesModule } from './roles/roles.module';
 import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.mod
     UsersModule,
     RolesModule,
     UserTenantRolesModule,
+    AuthModule,
   ],
   controllers: [AppController],
   providers: [AppService],

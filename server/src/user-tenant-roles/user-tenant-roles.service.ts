@@ -23,4 +23,23 @@ export class UserTenantRolesService {
       relations: { user: true, role: true },
     });
   }
+
+  async assign(params: {
+    userId: string;
+    tenantId: string;
+    roleId: string;
+    isPrimary?: boolean;
+    createdById?: string | null;
+  }): Promise<UserTenantRole> {
+    const entity = this.userTenantRoleRepository.create({
+      userId: params.userId,
+      tenantId: params.tenantId,
+      roleId: params.roleId,
+      isPrimary: params.isPrimary ?? false,
+      isActive: true,
+      createdById: params.createdById ?? null,
+      lastUpdatedById: params.createdById ?? null,
+    });
+    return this.userTenantRoleRepository.save(entity);
+  }
 }
