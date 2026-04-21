@@ -17,6 +17,12 @@ export class UserTenantRolesService {
     });
   }
 
+  findPrimaryForUser(userId: string): Promise<UserTenantRole | null> {
+    return this.userTenantRoleRepository.findOne({
+      where: { userId, isPrimary: true, isActive: true },
+    });
+  }
+
   findByTenant(tenantId: string): Promise<UserTenantRole[]> {
     return this.userTenantRoleRepository.find({
       where: { tenantId, isActive: true },

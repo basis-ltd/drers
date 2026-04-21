@@ -18,7 +18,8 @@ export function AppProviders({ children }: AppProvidersProps) {
           classNames: {
             toast:
               "font-sans bg-white text-[11px]! border border-border text-foreground shadow-md",
-            title: "text-[13px] font-normal text-primary!",
+            title: "text-[12px] font-normal text-primary!",
+            description: "text-[11px] font-normal text-primary!",
           },
         }}
       />

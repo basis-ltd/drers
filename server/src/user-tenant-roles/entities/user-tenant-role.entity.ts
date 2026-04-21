@@ -25,16 +25,22 @@ export class UserTenantRole extends BaseDomain {
   @Column({ name: 'is_active', type: 'boolean', default: true })
   isActive: boolean;
 
-  @ManyToOne(() => User, (user) => user.userTenantRoles, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.userTenantRoles, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @ManyToOne(() => Tenant, (tenant) => tenant.userTenantRoles, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Tenant, (tenant) => tenant.userTenantRoles, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'tenant_id' })
   tenant: Tenant;
 
   // RESTRICT: cannot delete a role that is actively assigned to users
-  @ManyToOne(() => Role, (role) => role.userTenantRoles, { onDelete: 'RESTRICT' })
+  @ManyToOne(() => Role, (role) => role.userTenantRoles, {
+    onDelete: 'RESTRICT',
+  })
   @JoinColumn({ name: 'role_id' })
   role: Role;
 }
