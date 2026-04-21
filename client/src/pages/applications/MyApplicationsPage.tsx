@@ -18,6 +18,7 @@ import {
   TableActionButton,
   TableActionButtonTrigger,
 } from "@/components/TableActionButton";
+import { capitalizeString, formatDate } from "@/utils/strings.utils";
 
 // ── Status display config ─────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<
@@ -128,6 +129,7 @@ export function MyApplicationsPage() {
       {
         header: "Research Area",
         accessorKey: "details.area",
+        cell: ({ row }) => capitalizeString(row.original.details?.area),
       },
       {
         header: "Type",
@@ -136,7 +138,7 @@ export function MyApplicationsPage() {
             variant="outline"
             className="border-primary/15 bg-primary/4 text-[10px] font-medium text-primary/60"
           >
-            {row.original.type}
+            {capitalizeString(row?.original?.type)}
           </Badge>
         ),
       },
@@ -147,14 +149,14 @@ export function MyApplicationsPage() {
             <Badge
               variant="outline"
               className={`text-[10px] font-normal ${
-                row.original.details.pathway === "FULL"
+                row.original.details?.pathway === "FULL"
                   ? "border-primary/20 bg-primary/6 text-primary/70"
-                  : row.original.details.pathway === "EXPEDITED"
+                  : row.original.details?.pathway === "EXPEDITED"
                     ? "border-sky-200 bg-sky-50 text-sky-700"
                     : "border-green-200 bg-green-50 text-green-700"
               }`}
             >
-              {row.original.details.pathway}
+              {capitalizeString(row.original.details?.pathway)}
             </Badge>
           ) : (
             <span className="text-[11px] text-primary/25">—</span>
@@ -172,7 +174,7 @@ export function MyApplicationsPage() {
               variant="outline"
               className={`text-[10px] font-medium ${statusCfg.className}`}
             >
-              {statusCfg.label}
+              {capitalizeString(statusCfg.label)}
             </Badge>
           );
         },
@@ -181,12 +183,8 @@ export function MyApplicationsPage() {
         header: "Submitted",
         cell: ({ row }) => (
           <span className="text-[11px] whitespace-nowrap text-primary/40">
-            {row.original.submittedAt
-              ? new Date(row.original.submittedAt).toLocaleDateString("en-GB", {
-                  day: "2-digit",
-                  month: "short",
-                  year: "numeric",
-                })
+            {row?.original?.submittedAt
+              ? formatDate(row?.original?.submittedAt, "DD/MM/YYYY")
               : "—"}
           </span>
         ),
@@ -267,7 +265,7 @@ export function MyApplicationsPage() {
                   : "text-primary/50 hover:bg-primary/6 hover:text-primary"
               }`}
             >
-              {label}
+              {capitalizeString(label)}
               {key !== "ALL" && data && (
                 <span
                   className={`ml-1.5 opacity-60 ${filter === key ? "text-white!" : "text-primary/50"}`}

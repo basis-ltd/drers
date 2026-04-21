@@ -14,6 +14,7 @@ export class OcrCronService implements OnModuleInit {
   private isRunning = false;
   private enabled = true;
   private maxAttempts = 3;
+  private requeueAuthFailuresOnBoot = false;
 
   constructor(
     @InjectRepository(Document)
@@ -24,13 +25,32 @@ export class OcrCronService implements OnModuleInit {
 
   onModuleInit(): void {
     this.enabled =
-      this.configService.get<string>('OCR_CRON_ENABLED', 'true') !== 'false';
+      this.configService.get<string>('OCR_CRON_ENABLED', 'false') === 'true';
     this.maxAttempts = Number(
       this.configService.get<string>('OCR_MAX_ATTEMPTS', '3'),
     );
+    this.requeueAuthFailuresOnBoot =
+      this.configService.get<string>(
+        'OCR_REQUEUE_FAILED_DOWNLOAD_AUTH_ERRORS_ON_BOOT',
+        'false',
+      ) === 'true';
     this.logger.log(
       `OCR cron ${this.enabled ? 'enabled' : 'disabled'} (maxAttempts=${this.maxAttempts})`,
     );
+    if (this.requeueAuthFailuresOnBoot) {
+      void this.ocrService
+        .requeueFailedDownloadAuthErrors()
+        .then((count) => {
+          this.logger.log(
+            `Requeued ${count} OCR document(s) after download auth failures`,
+          );
+        })
+        .catch((err) => {
+          this.logger.error(
+            `Failed to requeue OCR auth failures: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        });
+    }
   }
 
   @Cron(CronExpression.EVERY_MINUTE)

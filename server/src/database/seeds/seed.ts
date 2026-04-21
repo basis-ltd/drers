@@ -13,11 +13,11 @@ import { seedUserTenantRoles } from './06-seed-user-tenant-roles';
 // Seeds run in dependency order. Each seed is idempotent — it self-skips if
 // its table already has data. Add new seeds here to keep the runner canonical.
 const SEEDS: Array<{ name: string; run: (ds: DataSource) => Promise<void> }> = [
-  { name: '01-roles',             run: seedRoles },
-  { name: '02-permissions',       run: seedPermissions },
-  { name: '03-role-permissions',  run: seedRolePermissions },
-  { name: '04-tenants',           run: seedTenants },
-  { name: '05-users',             run: seedUsers },
+  { name: '01-roles', run: seedRoles },
+  { name: '02-permissions', run: seedPermissions },
+  { name: '03-role-permissions', run: seedRolePermissions },
+  { name: '04-tenants', run: seedTenants },
+  { name: '05-users', run: seedUsers },
   { name: '06-user-tenant-roles', run: seedUserTenantRoles },
 ];
 

@@ -1,4 +1,4 @@
-import { DataSource, In } from 'typeorm';
+import { DataSource } from 'typeorm';
 import { Role } from '../../roles/entities/role.entity';
 import { Permission } from '../../roles/entities/permission.entity';
 import { RolePermission } from '../../roles/entities/role-permission.entity';
@@ -7,77 +7,137 @@ import { RoleName } from '../../common/enums';
 // Permissions granted per role. Codes must match 02-seed-permissions.ts exactly.
 const ROLE_PERMISSION_MAP: Record<RoleName, string[]> = {
   [RoleName.SYS_ADMIN]: [
-    'applications:create', 'applications:read', 'applications:update', 'applications:delete', 'applications:submit', 'applications:withdraw',
-    'reviews:read', 'reviews:assign', 'reviews:submit', 'reviews:complete',
-    'payments:read', 'payments:manage',
-    'certificates:read', 'certificates:generate',
-    'meetings:read', 'meetings:manage',
-    'monitoring:read', 'monitoring:update',
-    'users:read', 'users:manage',
-    'tenants:read', 'tenants:manage',
-    'reports:view', 'reports:export',
-    'settings:read', 'settings:manage',
+    'applications:create',
+    'applications:read',
+    'applications:update',
+    'applications:delete',
+    'applications:submit',
+    'applications:withdraw',
+    'reviews:read',
+    'reviews:assign',
+    'reviews:submit',
+    'reviews:complete',
+    'payments:read',
+    'payments:manage',
+    'certificates:read',
+    'certificates:generate',
+    'meetings:read',
+    'meetings:manage',
+    'monitoring:read',
+    'monitoring:update',
+    'users:read',
+    'users:manage',
+    'tenants:read',
+    'tenants:manage',
+    'reports:view',
+    'reports:export',
+    'settings:read',
+    'settings:manage',
   ],
   [RoleName.RNEC_ADMIN]: [
-    'applications:read', 'applications:update', 'applications:delete', 'applications:withdraw',
-    'reviews:read', 'reviews:assign', 'reviews:submit', 'reviews:complete',
-    'payments:read', 'payments:manage',
-    'certificates:read', 'certificates:generate',
-    'meetings:read', 'meetings:manage',
-    'monitoring:read', 'monitoring:update',
-    'users:read', 'users:manage',
+    'applications:read',
+    'applications:update',
+    'applications:delete',
+    'applications:withdraw',
+    'reviews:read',
+    'reviews:assign',
+    'reviews:submit',
+    'reviews:complete',
+    'payments:read',
+    'payments:manage',
+    'certificates:read',
+    'certificates:generate',
+    'meetings:read',
+    'meetings:manage',
+    'monitoring:read',
+    'monitoring:update',
+    'users:read',
+    'users:manage',
     'tenants:read',
-    'reports:view', 'reports:export',
-    'settings:read', 'settings:manage',
+    'reports:view',
+    'reports:export',
+    'settings:read',
+    'settings:manage',
   ],
   [RoleName.IRB_ADMIN]: [
-    'applications:read', 'applications:update', 'applications:delete', 'applications:withdraw',
-    'reviews:read', 'reviews:assign', 'reviews:submit', 'reviews:complete',
+    'applications:read',
+    'applications:update',
+    'applications:delete',
+    'applications:withdraw',
+    'reviews:read',
+    'reviews:assign',
+    'reviews:submit',
+    'reviews:complete',
     'payments:read',
-    'certificates:read', 'certificates:generate',
-    'meetings:read', 'meetings:manage',
-    'monitoring:read', 'monitoring:update',
-    'users:read', 'users:manage',
+    'certificates:read',
+    'certificates:generate',
+    'meetings:read',
+    'meetings:manage',
+    'monitoring:read',
+    'monitoring:update',
+    'users:read',
+    'users:manage',
     'tenants:read',
-    'reports:view', 'reports:export',
-    'settings:read', 'settings:manage',
+    'reports:view',
+    'reports:export',
+    'settings:read',
+    'settings:manage',
   ],
   [RoleName.CHAIRPERSON]: [
     'applications:read',
-    'reviews:read', 'reviews:assign', 'reviews:submit', 'reviews:complete',
+    'reviews:read',
+    'reviews:assign',
+    'reviews:submit',
+    'reviews:complete',
     'payments:read',
-    'certificates:read', 'certificates:generate',
-    'meetings:read', 'meetings:manage',
+    'certificates:read',
+    'certificates:generate',
+    'meetings:read',
+    'meetings:manage',
     'monitoring:read',
     'users:read',
     'tenants:read',
-    'reports:view', 'reports:export',
+    'reports:view',
+    'reports:export',
     'settings:read',
   ],
   [RoleName.REVIEWER]: [
     'applications:read',
-    'reviews:read', 'reviews:submit', 'reviews:complete',
+    'reviews:read',
+    'reviews:submit',
+    'reviews:complete',
     'monitoring:read',
   ],
   [RoleName.FINANCE]: [
     'applications:read',
-    'payments:read', 'payments:manage',
-    'reports:view', 'reports:export',
+    'payments:read',
+    'payments:manage',
+    'reports:view',
+    'reports:export',
   ],
   [RoleName.APPLICANT]: [
-    'applications:create', 'applications:read', 'applications:update', 'applications:submit', 'applications:withdraw',
+    'applications:create',
+    'applications:read',
+    'applications:update',
+    'applications:submit',
+    'applications:withdraw',
     'payments:read',
     'certificates:read',
-    'monitoring:read', 'monitoring:update',
+    'monitoring:read',
+    'monitoring:update',
   ],
 };
 
-export async function seedRolePermissions(dataSource: DataSource): Promise<void> {
+export async function seedRolePermissions(
+  dataSource: DataSource,
+): Promise<void> {
   const rpRepo = dataSource.getRepository(RolePermission);
 
   const existing = await rpRepo.count();
   if (existing > 0) {
-    console.log(`  [role_permissions] Skipping — ${existing} mappings already exist`);
+    console.log(
+      `  [role_permissions] Skipping — ${existing} mappings already exist`,
+    );
     return;
   }
 
@@ -94,13 +154,20 @@ export async function seedRolePermissions(dataSource: DataSource): Promise<void>
 
   const entries: Partial<RolePermission>[] = [];
 
-  for (const [roleName, codes] of Object.entries(ROLE_PERMISSION_MAP) as [RoleName, string[]][]) {
+  for (const [roleName, codes] of Object.entries(ROLE_PERMISSION_MAP) as [
+    RoleName,
+    string[],
+  ][]) {
     const role = roleMap.get(roleName);
-    if (!role) throw new Error(`Role not found: ${roleName} — run roles seed first`);
+    if (!role)
+      throw new Error(`Role not found: ${roleName} — run roles seed first`);
 
     for (const code of codes) {
       const perm = permMap.get(code);
-      if (!perm) throw new Error(`Permission not found: ${code} — run permissions seed first`);
+      if (!perm)
+        throw new Error(
+          `Permission not found: ${code} — run permissions seed first`,
+        );
       entries.push({ roleId: role.id, permissionId: perm.id });
     }
   }

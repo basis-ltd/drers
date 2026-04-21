@@ -2,7 +2,9 @@ import { DataSource } from 'typeorm';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { TenantType } from '../../common/enums';
 
-export const TENANTS: Array<Pick<Tenant, 'name' | 'code' | 'type' | 'description' | 'isActive'>> = [
+export const TENANTS: Array<
+  Pick<Tenant, 'name' | 'code' | 'type' | 'description' | 'isActive'>
+> = [
   {
     name: 'Rwanda National Ethics Committee',
     code: 'RNEC',
