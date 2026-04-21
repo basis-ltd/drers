@@ -1,6 +1,7 @@
 import { createApi } from '@reduxjs/toolkit/query/react';
 import { baseQueryWithReauth } from '@/features/auth/api/baseQueryWithReauth';
 import type {
+  ApplicationDocument,
   Application,
   ApplicationDeclaration,
   ApplicationDetails,
@@ -21,7 +22,7 @@ import type {
 export const applicationsApi = createApi({
   reducerPath: 'applicationsApi',
   baseQuery: baseQueryWithReauth,
-  tagTypes: ['Application', 'ApplicationList'],
+  tagTypes: ['Application', 'ApplicationList', 'ApplicationDocuments'],
   endpoints: (builder) => ({
     createApplication: builder.mutation<CreateApplicationResponse, CreateApplicationDto>({
       query: (body) => ({ url: '/applications', method: 'POST', body }),
@@ -72,6 +73,16 @@ export const applicationsApi = createApi({
       query: ({ id, data }) => ({ url: `/applications/${id}/declaration`, method: 'PATCH', body: data }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'Application', id }],
     }),
+
+    listDocuments: builder.query<ApplicationDocument[], string>({
+      query: (id) => ({ url: `/applications/${id}/documents`, method: 'GET' }),
+      providesTags: (_r, _e, id) => [{ type: 'ApplicationDocuments', id }],
+    }),
+
+    deleteDocument: builder.mutation<void, { id: string; docId: string }>({
+      query: ({ id, docId }) => ({ url: `/applications/${id}/documents/${docId}`, method: 'DELETE' }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'ApplicationDocuments', id }],
+    }),
   }),
 });
 
@@ -86,4 +97,6 @@ export const {
   useUpdateProtocolMutation,
   useUpdateEthicsMutation,
   useUpdateDeclarationMutation,
+  useListDocumentsQuery,
+  useDeleteDocumentMutation,
 } = applicationsApi;

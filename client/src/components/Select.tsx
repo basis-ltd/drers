@@ -50,7 +50,7 @@ const Select = ({
       <p
         className={
           label
-            ? 'pl-1 flex items-center gap-1.5 text-[11px] lg:text-[12px] font-light leading-tight text-secondary'
+            ? 'pl-1 flex items-center gap-1.5 text-[12px]! font-light leading-tight text-primary'
             : 'hidden'
         }
       >
@@ -63,12 +63,12 @@ const Select = ({
         name={name}
       >
         <SelectTrigger
-          className={`w-full cursor-pointer !h-10 min-h-10 text-[11px] lg:text-[12px] font-light border border-primary/20 focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 bg-white shadow-sm rounded-md ${className}`}
+          className={`w-full cursor-pointer !h-9 min-h-9 text-[11px] lg:text-[12px] font-light border border-primary/20 focus:border-primary focus-visible:ring-2 focus-visible:ring-primary/20 bg-white rounded-md ${className}`}
         >
           <SelectValue
             className="text-[11px] lg:text-[12px] font-light"
             placeholder={
-              <p className="text-[11px] lg:text-[12px] font-light text-secondary/70">
+              <p className="text-[11px] lg:text-[12px] font-light text-primary/70">
                 {placeholder}
               </p>
             }

@@ -1,4 +1,4 @@
-import { faCalendar } from "@fortawesome/free-solid-svg-icons";
+import { faCalendar } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -150,20 +150,20 @@ const DatePicker = ({
 
   return (
     <Popover open={open} onOpenChange={setOpen} modal>
-      <PopoverTrigger disabled={disabled}>
+      <PopoverTrigger asChild disabled={disabled}>
         <Button
           type="button"
           variant={"outline"}
           className={cn(
-            "w-full h-10 px-4 justify-start text-left font-normal text-sm text-gray-900 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 ease-in-out hover:border-gray-300 hover:bg-white/90",
+            "w-full h-10 px-4 justify-start text-[12px]! text-left font-normal text-sm text-gray-900 bg-white/80 backdrop-blur-sm border border-gray-200 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 transition-all duration-200 ease-in-out hover:border-gray-300 hover:bg-white/90",
             !normalizedValue && "text-gray-400",
           )}
         >
-          <FontAwesomeIcon icon={faCalendar} className="w-4 h-4 mr-3 text-gray-500" />
+          <FontAwesomeIcon icon={faCalendar} className="w-4 h-4 mr-1 text-gray-500" />
           {displayValue ? (
             displayValue
           ) : (
-            <span className="text-sm text-gray-400 font-light">
+            <span className="text-[12px] text-gray-700 font-light">
               {placeholder}
             </span>
           )}
@@ -181,7 +181,7 @@ const DatePicker = ({
           >
             {selectionType !== "recurringDate" && (
               <Select
-                className="!h-10"
+                className="!h-8"
                 placeholder="Year"
                 onChange={(e) => {
                   setYear(e);
@@ -254,7 +254,7 @@ const DatePicker = ({
               />
             )}
             <Select
-              className="!h-10"
+              className="!h-8"
               placeholder="Month"
               onChange={(e) => {
                 if (!year) return;

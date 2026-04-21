@@ -43,7 +43,7 @@ const Button: FC<ButtonProps> = ({
   style,
   ...rest
 }) => {
-  const baseStyles = `py-[6px] px-4 font-light leading-tight flex items-center gap-1.5 justify-center text-center border border-[1px] border-primary rounded-md text-primary bg-white hover:bg-primary hover:text-white cursor-pointer ease-in-out duration-200 hover:scale-[1.01]
+  const baseStyles = `py-[6px] px-4 text-[12px]! font-light leading-tight flex items-center gap-1.5 justify-center text-center border border-[1px] border-primary rounded-md text-primary bg-white hover:bg-primary hover:text-white cursor-pointer ease-in-out duration-200 hover:scale-[1.01]
     sm:gap-1 md:gap-1.5 lg:gap-1.5
     ${
       !styled &&

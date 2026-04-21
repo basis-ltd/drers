@@ -12,12 +12,24 @@ import { ApplicationType } from '../enums/application-type.enum';
 import { CreateApplicationDto } from '../dto/create-application.dto';
 import { ListApplicationsDto } from '../dto/list-applications.dto';
 import { UserTenantRolesService } from '../../user-tenant-roles/user-tenant-roles.service';
+import { Document } from '../../documents/entities/document.entity';
+import { DocumentType } from '../../documents/enums/document-type.enum';
+
+const REQUIRED_DOCUMENT_TYPES: DocumentType[] = [
+  DocumentType.PROTOCOL,
+  DocumentType.INFORMED_CONSENT_FORM,
+  DocumentType.PRINCIPAL_INVESTIGATOR_CV,
+  DocumentType.ETHICS_TRAINING_CERT,
+  DocumentType.NHRA_RESEARCHER_CERT,
+];
 
 @Injectable()
 export class ApplicationsService {
   constructor(
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
+    @InjectRepository(Document)
+    private readonly documentRepo: Repository<Document>,
     private readonly userTenantRolesService: UserTenantRolesService,
     private readonly dataSource: DataSource,
   ) {}
@@ -116,7 +128,7 @@ export class ApplicationsService {
       throw new ForbiddenException('Only draft applications can be submitted');
     }
 
-    this.validateSubmissionCompleteness(app);
+    await this.validateSubmissionCompleteness(app);
 
     app.status = ApplicationStatus.SUBMITTED;
     app.submittedAt = new Date();
@@ -207,7 +219,7 @@ export class ApplicationsService {
     return `RNEC-${year}-${String(sequence).padStart(5, '0')}`;
   }
 
-  private validateSubmissionCompleteness(app: Application): void {
+  private async validateSubmissionCompleteness(app: Application): Promise<void> {
     const missing: string[] = [];
 
     if (!app.details) missing.push('Application Details (Step 1)');
@@ -217,6 +229,16 @@ export class ApplicationsService {
     if (!app.declaration) missing.push('Declaration (Step 6)');
     if (app.declaration && !app.declaration.agreed) {
       missing.push('Declaration must be agreed to (Step 6)');
+    }
+
+    const documents = await this.documentRepo.find({
+      where: { applicationId: app.id, isCurrentVersion: true },
+      select: ['documentType'],
+    });
+    const presentTypes = new Set(documents.map((doc) => doc.documentType));
+    const missingRequiredDocs = REQUIRED_DOCUMENT_TYPES.filter((type) => !presentTypes.has(type));
+    if (missingRequiredDocs.length > 0) {
+      missing.push(`Required documents missing (Step 5): ${missingRequiredDocs.join(', ')}`);
     }
 
     if (missing.length > 0) {

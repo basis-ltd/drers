@@ -60,7 +60,7 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
               <NavLink
                 to={to}
                 className={({ isActive }) =>
-                  `group flex cursor-pointer items-center gap-3 ${collapsed ? "justify-center rounded-md px-2 py-2.5" : "rounded-md px-3.5 py-2.5"} text-[12px]! font-normal transition-all duration-150
+                  `group flex cursor-pointer items-center gap-3 ${collapsed ? "justify-center rounded-md! px-2 py-2.5" : "rounded-md! px-3.5 py-2.5"} text-[12px]! font-normal transition-all duration-150
                   ${
                     isActive
                       ? "bg-white/16 text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.12)]"

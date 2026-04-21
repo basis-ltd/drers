@@ -58,6 +58,16 @@ export type StudyDesign =
 export type ConsentWaiver = 'YES' | 'NO';
 export type ConflictOfInterest = 'NONE' | 'YES';
 export type ProfessionalTitle = 'MR' | 'MRS' | 'MS' | 'DR' | 'PROF' | 'REV';
+export type DocumentType =
+  | 'PROTOCOL'
+  | 'INFORMED_CONSENT_FORM'
+  | 'PRINCIPAL_INVESTIGATOR_CV'
+  | 'ETHICS_TRAINING_CERT'
+  | 'NHRA_RESEARCHER_CERT'
+  | 'COVER_LETTER'
+  | 'BUDGET'
+  | 'OTHER';
+export type DocumentOcrStatus = 'PENDING' | 'PROCESSING' | 'EXTRACTED' | 'FAILED';
 
 // ── Entity shapes (returned from API) ────────────────────────────────────────
 
@@ -144,6 +154,40 @@ export interface ApplicationDeclaration {
   signatureCloudinaryUrl: string | null;
   signatureData: string | null;
   signedAt: string | null;
+}
+
+export interface ApplicationDocument {
+  id: string;
+  applicationId: string;
+  documentType: DocumentType;
+  originalFilename: string;
+  mimeType: string | null;
+  cloudinaryPublicId: string | null;
+  cloudinaryUrl: string | null;
+  secureUrl: string | null;
+  cloudinaryResourceType: string | null;
+  format: string;
+  pageCount: number | null;
+  detectedLanguages: string[] | null;
+  hasTextLayer: boolean | null;
+  scanQualityScore: number | null;
+  fileSizeBytes: number;
+  checksum: string | null;
+  isRequired: boolean;
+  isCurrentVersion: boolean;
+  ocrStatus: DocumentOcrStatus;
+  ocrProvider: string | null;
+  ocrModel: string | null;
+  ocrStartedAt: string | null;
+  ocrCompletedAt: string | null;
+  ocrErrorMessage: string | null;
+  ocrConfidence: number | null;
+  ocrExtractedText: string | null;
+  ocrExtractedData: Record<string, unknown> | null;
+  ocrContext: Record<string, unknown> | null;
+  aiScreeningResult: Record<string, unknown> | null;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export interface Application {

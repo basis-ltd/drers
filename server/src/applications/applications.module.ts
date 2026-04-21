@@ -9,6 +9,7 @@ import { ApplicationProtocol } from './entities/application-protocol.entity';
 import { ApplicationEthics } from './entities/application-ethics.entity';
 import { ApplicationDeclaration } from './entities/application-declaration.entity';
 import { UserTenantRolesModule } from '../user-tenant-roles/user-tenant-roles.module';
+import { Document } from '../documents/entities/document.entity';
 import { ApplicationsController } from './controllers/applications.controller';
 import { ApplicationDetailsController } from './controllers/application-details.controller';
 import { ApplicationTeamController } from './controllers/application-team.controller';
@@ -33,6 +34,7 @@ import { ApplicationDeclarationService } from './services/application-declaratio
       ApplicationProtocol,
       ApplicationEthics,
       ApplicationDeclaration,
+      Document,
     ]),
     UserTenantRolesModule,
   ],

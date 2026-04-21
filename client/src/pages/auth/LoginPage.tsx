@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { AuthLayout } from "@/features/auth/components/AuthLayout";
 import { useLogin } from "@/features/auth/hooks";
+import { linkTextClass } from "@/constants/input.constants";
 
 const loginSchema = z.object({
   email: z
@@ -24,8 +25,6 @@ const loginSchema = z.object({
 
 type LoginFormValues = z.infer<typeof loginSchema>;
 
-const linkTextClass =
-  "font-normal text-[13px] normal-case tracking-normal text-primary hover:underline underline-offset-2 hover:text-primary/80";
 
 export function LoginPage() {
   const formId = useId();
@@ -138,7 +137,7 @@ export function LoginPage() {
             />
             <Link
               to="/auth/forgot-password"
-              className="text-[12px] text-primary hover:underline underline-offset-2 hover:text-primary"
+              className="text-[12px] text-primary hover:underline underline-offset-2 hover:text-primary underline"
             >
               Forgot password?
             </Link>

@@ -1,4 +1,3 @@
-import Button from "@/components/Button";
 import {
   Command,
   CommandEmpty,
@@ -76,13 +75,17 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
     ref,
   ) => {
     const [open, setOpen] = useState(false);
+    const selectedValue = value ?? defaultValue ?? "";
+    const selectedLabel = selectedValue
+      ? options.find((option) => option.value === selectedValue)?.label
+      : "";
 
     return (
-      <label className={`flex flex-col gap-1 w-full ${labelClassName}`}>
+      <label className={`flex flex-col gap-2 w-full ${labelClassName}`}>
         <p
           className={
             label
-              ? "flex items-center gap-1 text-sm font-normal text-black"
+              ? "pl-1 flex items-center gap-1.5 text-[11px] lg:text-[12px] font-light leading-tight text-primary"
               : "hidden"
           }
         >
@@ -90,9 +93,9 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
           {required && (
             <CustomTooltip
               label={required ? `${label} is required` : ""}
-              labelClassName="text-[12px] bg-red-700"
+              labelClassName="text-[11px] bg-red-600"
             >
-              <span className="text-red-700 cursor-pointer">*</span>
+              <span className="text-red-600 cursor-pointer">*</span>
             </CustomTooltip>
           )}
         </p>
@@ -102,63 +105,53 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
           modal
         >
           <PopoverTrigger
-            render={(props) => {
-              const { className: triggerClassName, ...triggerRest } = props;
-              return isLoading ? (
-                <Button
-                  {...triggerRest}
-                  disabled
-                  variant="default"
+            disabled={isLoading || readOnly}
+            className={cn(
+              "flex h-9 min-h-9 w-full items-center justify-between rounded-md border border-primary/20 bg-white px-3 text-left outline-none transition-[color,border-color,box-shadow] duration-200 hover:bg-background/70 focus-visible:border-primary focus-visible:ring-2 focus-visible:ring-primary/20",
+              inputClassName || "text-[11px] lg:text-[12px] font-light leading-tight",
+              readOnly && "cursor-default bg-background",
+              className,
+            )}
+          >
+            {isLoading ? (
+              <SkeletonLoader type="input" height="2.25rem" className="w-full" />
+            ) : (
+              <>
+                <span
                   className={cn(
-                    "w-full rounded-md border border-input bg-background px-2 py-2 text-left",
-                    className,
-                    triggerClassName,
+                    "block w-full max-w-[calc(100%-24px)] flex-1 truncate text-left",
+                    selectedValue
+                      ? selectedValueClassName ||
+                          inputClassName ||
+                          "text-[11px] lg:text-[12px] font-light text-primary"
+                      : cn(
+                          "text-primary/70",
+                          inputClassName || "text-[11px] lg:text-[12px] font-light",
+                        ),
                   )}
                 >
-                  <SkeletonLoader type="input" height="2.5rem" className="w-full" />
-                </Button>
-              ) : (
-                <Button
-                  {...triggerRest}
-                  role="combobox"
-                  aria-expanded={open}
-                  className={cn(
-                    "flex h-10 w-full items-center justify-between font-normal hover:bg-gray-100",
-                    inputClassName || "text-[12px]",
-                    className,
-                    triggerClassName,
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "block w-full max-w-[calc(100%-24px)] flex-1 truncate text-left",
-                      value
-                        ? selectedValueClassName || inputClassName || "text-[12px]"
-                        : cn("text-[color:var(--lens-ink)]/55", inputClassName || "text-[12px]"),
-                    )}
-                  >
-                    {value
-                      ? options.find((option) => option.value === value)?.label
-                      : placeholder || "Select option..."}
-                  </span>
-                  <FontAwesomeIcon
-                    icon={faCaretDown}
-                    className="ml-2 h-4 w-4 shrink-0 flex-none text-[12px] opacity-50"
-                  />
-                </Button>
-              );
-            }}
-          />
-          <PopoverContent className="w-full p-0">
-            <Command ref={ref} className="w-full">
+                  {selectedLabel || placeholder || "Select option..."}
+                </span>
+                <FontAwesomeIcon
+                  icon={faCaretDown}
+                  className="ml-2 h-3.5 w-3.5 shrink-0 flex-none text-[11px] text-primary/50"
+                />
+              </>
+            )}
+          </PopoverTrigger>
+          <PopoverContent
+            className="w-(--anchor-width) min-w-(--anchor-width) max-w-(--anchor-width) border border-primary/10 p-0"
+            align="start"
+          >
+            <Command ref={ref} className="w-full bg-white p-0">
               <CommandInput
                 placeholder="Search option..."
-                className={`h-9 w-full ${inputClassName || "text-[12px]"}`}
+                className={`h-9 w-full ${inputClassName || "text-[11px] lg:text-[12px] font-light"}`}
               />
-              <CommandList ref={ref} className="w-full">
+              <CommandList ref={ref} className="w-full p-1">
                 <CommandEmpty
                   className={`w-full text-center text-primary ${
-                    optionsClassName || "text-[12px] py-2"
+                    optionsClassName || "text-[11px] lg:text-[12px] py-2 font-light"
                   }`}
                 >
                   No option found.
@@ -166,10 +159,9 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                 <CommandGroup className="w-full">
                   {(options ?? [])?.map((option) => (
                     <CommandItem
-                      key={option.label}
-                      defaultValue={defaultValue}
+                      key={option.value}
                       disabled={option?.disabled}
-                      className="flex items-center gap-2 w-full cursor-pointer overflow-hidden hover:bg-gray-100"
+                      className="flex h-8 items-center gap-2 w-full cursor-pointer overflow-hidden rounded-md px-2 text-[11px] lg:text-[12px] font-light hover:bg-background"
                       value={option.label}
                       onSelect={(currentValue) => {
                         const selectedOption = options.find(
@@ -183,12 +175,15 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                         className={`${
                           option?.disabled && `text-gray-400 cursor-not-allowed`
                         } truncate max-w-[calc(100%-24px)] ${
-                          optionsClassName || "text-[12px]"
+                          optionsClassName || "text-[11px] lg:text-[12px] font-light text-primary"
                         }`}
                       >
                         {option.label}
                       </p>
-                      <FontAwesomeIcon icon={value === option.value ? faCheck : faCircle} className="ml-auto h-4 w-4 flex-none" />
+                      <FontAwesomeIcon
+                        icon={selectedValue === option.value ? faCheck : faCircle}
+                        className="ml-auto h-3.5 w-3.5 flex-none text-primary/60"
+                      />
                     </CommandItem>
                   ))}
                 </CommandGroup>

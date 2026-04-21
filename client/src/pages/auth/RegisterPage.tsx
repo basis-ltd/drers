@@ -8,6 +8,8 @@ import Input from "@/components/Input";
 import Button from "@/components/Button";
 import { AuthLayout } from "@/features/auth/components/AuthLayout";
 import { useRegister } from "@/features/auth/hooks";
+import { linkTextClass } from "@/constants/input.constants";
+import { cn } from "@/lib/utils";
 
 const registerSchema = z.object({
   firstName: z.string().min(1, "Enter your first name").max(100),
@@ -60,16 +62,17 @@ export function RegisterPage() {
   return (
     <AuthLayout>
       <header className="mb-8 space-y-2 text-left">
-        <h2 className="heading-auth">
-          Create your account
-        </h2>
+        <h2 className="heading-auth">Create your account</h2>
         <p className="text-muted-foreground">
           Register as an applicant to submit research protocols.
         </p>
       </header>
 
       <form className="w-full space-y-5" onSubmit={onSubmit} noValidate>
-        <fieldset className="flex flex-col gap-4 border-0 p-0" disabled={isLoading}>
+        <fieldset
+          className="flex flex-col gap-4 border-0 p-0"
+          disabled={isLoading}
+        >
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
             <Controller
               name="firstName"
@@ -170,10 +173,7 @@ export function RegisterPage() {
 
         <p className="text-center text-[13px]">
           Already have an account?{" "}
-          <Link
-            to="/auth/login"
-            className="font-normal text-[12px] text-primary hover:underline underline-offset-2"
-          >
+          <Link to="/auth/login" className={cn(linkTextClass)}>
             Sign in
           </Link>
         </p>

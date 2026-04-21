@@ -151,7 +151,7 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
                   initialData={application?.ethics ?? null}
                 />
               )}
-              {step === 5 && <Step5Documents />}
+              {step === 5 && <Step5Documents applicationId={applicationId} />}
               {step === 6 && (
                 <Step6Declaration
                   applicationId={applicationId}

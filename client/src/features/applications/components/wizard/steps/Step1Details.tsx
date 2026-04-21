@@ -5,7 +5,6 @@ import { z } from "zod";
 import { CheckCircle, Loader2 } from "lucide-react";
 import Input from "@/components/Input";
 import Select from "@/components/Select";
-import CustomTooltip from "@/components/CustomTooltip";
 import { useUpdateDetailsMutation } from "../../../api/applicationsApi";
 import { useAutoSave } from "../../../hooks/useAutoSave";
 import {
@@ -175,14 +174,6 @@ export function Step1Details({
           />
         </fieldset>
 
-        {/* Review pathway */}
-        <fieldset className="space-y-2">
-          <legend className="pl-1 text-[11px] font-light leading-tight text-primary lg:text-[12px]">
-            Requested Review Pathway{" "}
-            <CustomTooltip label="The pathway determines the review process and timeline. Select based on the level of risk to participants.">
-              <span className="cursor-help text-red-600">*</span>
-            </CustomTooltip>
-          </legend>
           <Controller
             name="pathway"
             control={control}
@@ -200,7 +191,6 @@ export function Step1Details({
               />
             )}
           />
-        </fieldset>
 
         {/* Dates + Multi-centre */}
         <fieldset className="grid grid-cols-1 gap-4 md:grid-cols-3">

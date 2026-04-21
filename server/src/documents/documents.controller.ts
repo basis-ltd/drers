@@ -6,28 +6,34 @@ import {
   Param,
   ParseUUIDPipe,
   Post,
-  UploadedFile,
-  UseInterceptors,
+  UseGuards,
 } from '@nestjs/common';
-import { FileInterceptor } from '@nestjs/platform-express';
 import { CurrentUser } from '../auth/decorators/current-user.decorator';
 import type { JwtUser } from '../auth/decorators/current-user.decorator';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { DocumentsService } from './documents.service';
-import { UploadDocumentDto } from './dto/upload-document.dto';
+import { RegisterDocumentDto } from './dto/register-document.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('applications/:id/documents')
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
-  @Post()
-  @UseInterceptors(FileInterceptor('file'))
-  upload(
+  @Get('sign')
+  signUpload(
     @Param('id', ParseUUIDPipe) id: string,
-    @UploadedFile() file: Express.Multer.File,
-    @Body() dto: UploadDocumentDto,
     @CurrentUser() user: JwtUser,
   ) {
-    return this.documentsService.upload(id, file, dto, user.sub);
+    return this.documentsService.getUploadSignature(id, user.sub);
+  }
+
+  @Post('register')
+  register(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Body() dto: RegisterDocumentDto,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.documentsService.registerUpload(id, dto, user.sub);
   }
 
   @Get()
