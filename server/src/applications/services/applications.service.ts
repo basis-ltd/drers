@@ -14,6 +14,7 @@ import { ListApplicationsDto } from '../dto/list-applications.dto';
 import { UserTenantRolesService } from '../../user-tenant-roles/user-tenant-roles.service';
 import { Document } from '../../documents/entities/document.entity';
 import { DocumentType } from '../../documents/enums/document-type.enum';
+import { RoleName } from '../../common/enums';
 
 const REQUIRED_DOCUMENT_TYPES: DocumentType[] = [
   DocumentType.PROTOCOL,
@@ -110,6 +111,38 @@ export class ApplicationsService {
     return app;
   }
 
+  /**
+   * Fetch an application for reading by its applicant or any staff role.
+   * Staff = any active role other than APPLICANT.
+   */
+  async findOneForViewer(id: string, userId: string): Promise<Application> {
+    const app = await this.applicationRepo.findOne({
+      where: { id },
+      relations: {
+        applicant: true,
+        details: true,
+        team: true,
+        protocol: true,
+        ethics: true,
+        declaration: true,
+        studySites: true,
+        coInvestigators: true,
+      },
+    });
+    if (!app) throw new NotFoundException('Application not found');
+
+    if (app.applicantId === userId) return app;
+
+    const roles = await this.userTenantRolesService.findByUser(userId);
+    const hasStaffRole = roles.some(
+      (utr) => utr.role?.name && utr.role.name !== RoleName.APPLICANT,
+    );
+    if (!hasStaffRole) {
+      throw new ForbiddenException('Access denied');
+    }
+    return app;
+  }
+
   async submit(id: string, userId: string): Promise<Application> {
     const app = await this.applicationRepo.findOne({
       where: { id },
@@ -134,6 +167,26 @@ export class ApplicationsService {
     app.submittedAt = new Date();
     app.lastUpdatedById = userId;
 
+    return this.applicationRepo.save(app);
+  }
+
+  /**
+   * Shared status transition helper for cross-module workflow updates.
+   */
+  async transitionStatus(
+    id: string,
+    status: ApplicationStatus,
+    userId: string,
+    options?: { setDecisionAt?: boolean },
+  ): Promise<Application> {
+    const app = await this.applicationRepo.findOne({ where: { id } });
+    if (!app) throw new NotFoundException('Application not found');
+
+    app.status = status;
+    if (options?.setDecisionAt) {
+      app.decisionAt = new Date();
+    }
+    app.lastUpdatedById = userId;
     return this.applicationRepo.save(app);
   }
 

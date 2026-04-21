@@ -18,6 +18,7 @@ import { ApplicationProtocol } from '../applications/entities/application-protoc
 import { ApplicationEthics } from '../applications/entities/application-ethics.entity';
 import { ApplicationDeclaration } from '../applications/entities/application-declaration.entity';
 import { Document } from '../documents/entities/document.entity';
+import { Review } from '../reviews/entities/review.entity';
 import { AuditLog } from '../common/entities/audit-log.entity';
 import { AuditLogSubscriber } from '../audit/subscribers/audit-log.subscriber';
 
@@ -51,6 +52,7 @@ import { AuditLogSubscriber } from '../audit/subscribers/audit-log.subscriber';
           ApplicationEthics,
           ApplicationDeclaration,
           Document,
+          Review,
           AuditLog,
         ],
         subscribers: [AuditLogSubscriber],

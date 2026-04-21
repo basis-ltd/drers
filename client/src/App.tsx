@@ -14,6 +14,8 @@ import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { MyApplicationsPage } from '@/pages/applications/MyApplicationsPage';
 import { NewApplicationPage } from '@/pages/applications/NewApplicationPage';
 import { ApplicationSubmittedPage } from '@/pages/applications/ApplicationSubmittedPage';
+import { ApplicationDetailsPage } from '@/pages/applications/ApplicationDetailsPage';
+import { ApplicationReviewPage } from '@/pages/applications/ApplicationReviewPage';
 
 // Layout
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -58,6 +60,8 @@ export default function App() {
       <Route path="/applications/new"      element={<ProtectedRoute><NewApplicationPage /></ProtectedRoute>} />
       <Route path="/applications/:id/edit" element={<ProtectedRoute><NewApplicationPage /></ProtectedRoute>} />
       <Route path="/applications/:id/submitted" element={<ProtectedRoute><ApplicationSubmittedPage /></ProtectedRoute>} />
+      <Route path="/applications/:id/review" element={<ProtectedRoute><ApplicationReviewPage /></ProtectedRoute>} />
+      <Route path="/applications/:id"      element={<ProtectedRoute><ApplicationDetailsPage /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

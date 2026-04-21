@@ -11,6 +11,7 @@ import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.mod
 import { AuthModule } from './auth/auth.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { DocumentsModule } from './documents/documents.module';
+import { ReviewsModule } from './reviews/reviews.module';
 import { AuditModule } from './audit/audit.module';
 
 @Module({
@@ -30,6 +31,7 @@ import { AuditModule } from './audit/audit.module';
     AuthModule,
     ApplicationsModule,
     DocumentsModule,
+    ReviewsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

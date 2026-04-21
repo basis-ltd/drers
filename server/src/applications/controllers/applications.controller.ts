@@ -35,7 +35,7 @@ export class ApplicationsController {
     @Param('id', ParseUUIDPipe) id: string,
     @CurrentUser() user: JwtUser,
   ) {
-    return this.applicationsService.findOneOrFail(id, user.sub);
+    return this.applicationsService.findOneForViewer(id, user.sub);
   }
 
   @Post(':id/submit')

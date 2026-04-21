@@ -19,69 +19,12 @@ import {
   TableActionButtonTrigger,
 } from "@/components/TableActionButton";
 import { capitalizeString, formatDate } from "@/utils/strings.utils";
-
-// ── Status display config ─────────────────────────────────────────────────────
-const STATUS_CONFIG: Record<
-  ApplicationStatus,
-  { label: string; className: string }
-> = {
-  DRAFT: {
-    label: "Draft",
-    className: "border-primary/20 bg-primary/6 text-primary/70",
-  },
-  SUBMITTED: {
-    label: "Submitted",
-    className: "border-blue-200 bg-blue-50 text-blue-700",
-  },
-  PAYMENT_PENDING: {
-    label: "Payment Pending",
-    className: "border-amber-200 bg-amber-50 text-amber-700",
-  },
-  SCREENING: {
-    label: "Screening",
-    className: "border-purple-200 bg-purple-50 text-purple-700",
-  },
-  UNDER_REVIEW: {
-    label: "Under Review",
-    className: "border-indigo-200 bg-indigo-50 text-indigo-700",
-  },
-  QUERY_RAISED: {
-    label: "Query Raised",
-    className: "border-orange-200 bg-orange-50 text-orange-700",
-  },
-  RESUBMITTED: {
-    label: "Resubmitted",
-    className: "border-sky-200 bg-sky-50 text-sky-700",
-  },
-  MEETING_SCHEDULED: {
-    label: "Meeting Scheduled",
-    className: "border-violet-200 bg-violet-50 text-violet-700",
-  },
-  APPROVED: {
-    label: "Approved",
-    className: "border-green-200 bg-green-50 text-green-700",
-  },
-  CONDITIONALLY_APPROVED: {
-    label: "Conditional",
-    className: "border-teal-200 bg-teal-50 text-teal-700",
-  },
-  REVISIONS_REQUIRED: {
-    label: "Revisions Required",
-    className: "border-yellow-200 bg-yellow-50 text-yellow-700",
-  },
-  REJECTED: {
-    label: "Rejected",
-    className: "border-red-200 bg-red-50 text-red-700",
-  },
-  WITHDRAWN: {
-    label: "Withdrawn",
-    className: "border-slate-200 bg-slate-50 text-slate-500",
-  },
-  CLOSED: {
-    label: "Closed",
-    className: "border-slate-200 bg-slate-50 text-slate-500",
-  },
-};
+import {
+  STATUS_STYLES as STATUS_CONFIG,
+  isReviewEligible,
+} from "@/features/applications/utils/statusStyles";
+import { useRoles } from "@/features/auth/hooks/useRoles";
+import { faEye, faGavel } from "@fortawesome/free-solid-svg-icons";
 
 type FilterKey = "ALL" | "DRAFT" | "UNDER_REVIEW" | "QUERY_RAISED" | "APPROVED";
 
@@ -98,6 +41,8 @@ export function MyApplicationsPage() {
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
+  const { isReviewer, isChairperson, isAdmin } = useRoles();
+  const canReview = isReviewer || isChairperson || isAdmin;
 
   const { data, isLoading } = useListApplicationsQuery({
     status: filter === "ALL" ? undefined : (filter as ApplicationStatus),
@@ -198,6 +143,11 @@ export function MyApplicationsPage() {
               className="flex gap-2"
             >
               <menu className="w-full flex flex-col gap-1">
+                <TableActionButton
+                  to={`/applications/${row.original.id}`}
+                  label="View"
+                  icon={faEye}
+                />
                 {["DRAFT"].includes(row.original.status) && (
                   <TableActionButton
                     to={`/applications/${row.original.id}/edit`}
@@ -205,16 +155,11 @@ export function MyApplicationsPage() {
                     icon={faPenToSquare}
                   />
                 )}
-                {["APPROVED"].includes(row.original.status) && (
+                {canReview && isReviewEligible(row.original.status) && (
                   <TableActionButton
-                    to={`/applications/${row.original.id}/certificate`}
-                    label="Certificate"
-                  />
-                )}
-                {["QUERY_RAISED"].includes(row.original.status) && (
-                  <TableActionButton
-                    to={`/applications/${row.original.id}/respond`}
-                    label="Respond"
+                    to={`/applications/${row.original.id}/review`}
+                    label="Review"
+                    icon={faGavel}
                   />
                 )}
               </menu>
@@ -223,7 +168,7 @@ export function MyApplicationsPage() {
         },
       },
     ],
-    [],
+    [canReview],
   );
 
   return (
