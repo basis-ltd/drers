@@ -1,8 +1,10 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { TenantType } from '../../common/enums';
 import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-role.entity';
 
+@Auditable()
 @Entity('tenants')
 export class Tenant extends BaseDomain {
   @Column({ type: 'varchar', length: 255 })

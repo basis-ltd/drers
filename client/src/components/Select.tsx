@@ -5,12 +5,12 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
-} from '@/components/ui/select';
-import type { UUID } from '@/types/common/base.types';
-import { FieldValues } from 'react-hook-form';
-import { FieldError, Merge } from 'react-hook-form';
-import { FieldErrorsImpl } from 'react-hook-form';
-import { InputErrorMessage } from './ErrorLabels';
+} from "@/components/ui/select";
+import type { UUID } from "@/types/common/base.types";
+import { FieldValues } from "react-hook-form";
+import { FieldError, Merge } from "react-hook-form";
+import { FieldErrorsImpl } from "react-hook-form";
+import { InputErrorMessage } from "./ErrorLabels";
 
 type SelectProps = {
   label?: string | number | undefined;
@@ -34,9 +34,9 @@ type SelectProps = {
 const Select = ({
   options = [],
   defaultValue = undefined,
-  placeholder = 'Select here...',
+  placeholder = "Select here...",
   className = undefined,
-  value = '',
+  value = "",
   onChange,
   label = undefined,
   required = false,
@@ -50,11 +50,11 @@ const Select = ({
       <p
         className={
           label
-            ? 'pl-1 flex items-center gap-1.5 text-[12px]! font-light leading-tight text-primary'
-            : 'hidden'
+            ? "pl-1 flex items-center gap-1.5 text-[12px]! font-light leading-tight text-primary"
+            : "hidden"
         }
       >
-        {label} <span className={required ? `text-red-600` : 'hidden'}>*</span>
+        {label} <span className={required ? `text-red-600` : "hidden"}>*</span>
       </p>
       <SelectComponent
         onValueChange={onChange}

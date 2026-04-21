@@ -1,8 +1,10 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { Application } from './application.entity';
 import { StudyDesign } from '../enums/study-design.enum';
 
+@Auditable()
 @Entity('application_protocols')
 export class ApplicationProtocol extends BaseDomain {
   @Index('idx_app_protocol_application_id')

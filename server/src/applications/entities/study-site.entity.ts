@@ -1,7 +1,9 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { Application } from './application.entity';
 
+@Auditable()
 @Entity('study_sites')
 export class StudySite extends BaseDomain {
   @Index('idx_study_site_application_id')

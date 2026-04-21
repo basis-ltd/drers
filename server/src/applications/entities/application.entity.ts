@@ -8,6 +8,7 @@ import {
   OneToOne,
 } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { ApplicationStatus } from '../enums/application-status.enum';
@@ -20,9 +21,15 @@ import { ApplicationDeclaration } from './application-declaration.entity';
 import { CoInvestigator } from './co-investigator.entity';
 import { StudySite } from './study-site.entity';
 
+@Auditable()
 @Entity('applications')
 export class Application extends BaseDomain {
-  @Column({ name: 'reference_number', type: 'varchar', length: 20, unique: true })
+  @Column({
+    name: 'reference_number',
+    type: 'varchar',
+    length: 20,
+    unique: true,
+  })
   referenceNumber: string;
 
   @Index('idx_applications_applicant_id')

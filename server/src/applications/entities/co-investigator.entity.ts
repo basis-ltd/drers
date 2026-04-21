@@ -1,8 +1,10 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { Application } from './application.entity';
 import { ProfessionalTitle } from '../../common/enums/professional-title.enum';
 
+@Auditable()
 @Entity('co_investigators')
 export class CoInvestigator extends BaseDomain {
   @Index('idx_co_inv_application_id')

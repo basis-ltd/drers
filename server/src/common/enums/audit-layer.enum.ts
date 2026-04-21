@@ -1,0 +1,5 @@
+export enum AuditLayer {
+  CONTROLLER = 'CONTROLLER',
+  SERVICE = 'SERVICE',
+  REPOSITORY = 'REPOSITORY',
+}

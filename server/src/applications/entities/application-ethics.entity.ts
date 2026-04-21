@@ -1,9 +1,11 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { Application } from './application.entity';
 import { ConsentWaiver } from '../enums/consent-waiver.enum';
 import { ConflictOfInterest } from '../enums/conflict-of-interest.enum';
 
+@Auditable()
 @Entity('application_ethics')
 export class ApplicationEthics extends BaseDomain {
   @Index('idx_app_ethics_application_id')

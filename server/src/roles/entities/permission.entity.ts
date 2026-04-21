@@ -1,7 +1,9 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { RolePermission } from './role-permission.entity';
 
+@Auditable()
 @Entity('permissions')
 export class Permission extends BaseDomain {
   @Index('idx_permissions_code', { unique: true })

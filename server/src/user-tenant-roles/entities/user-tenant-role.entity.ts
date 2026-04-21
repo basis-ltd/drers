@@ -1,9 +1,11 @@
 import { Column, Entity, Index, JoinColumn, ManyToOne, Unique } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { User } from '../../users/entities/user.entity';
 import { Tenant } from '../../tenants/entities/tenant.entity';
 import { Role } from '../../roles/entities/role.entity';
 
+@Auditable()
 @Entity('user_tenant_roles')
 @Unique('uq_user_tenant_roles', ['userId', 'tenantId', 'roleId'])
 export class UserTenantRole extends BaseDomain {

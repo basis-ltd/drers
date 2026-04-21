@@ -146,7 +146,7 @@ export function MyApplicationsPage() {
           row.original.details?.pathway ? (
             <Badge
               variant="outline"
-              className={`text-[10px] font-medium ${
+              className={`text-[10px] font-normal ${
                 row.original.details.pathway === "FULL"
                   ? "border-primary/20 bg-primary/6 text-primary/70"
                   : row.original.details.pathway === "EXPEDITED"
@@ -250,7 +250,7 @@ export function MyApplicationsPage() {
       <section className="mb-4 flex flex-wrap items-center gap-3">
         <nav
           aria-label="Status filters"
-          className="flex flex-wrap gap-1 rounded-lg border border-primary/10 bg-white p-1"
+          className="flex flex-wrap gap-1 rounded-md border border-primary/10 bg-white p-1"
         >
           {FILTERS.map(({ key, label }) => (
             <Link

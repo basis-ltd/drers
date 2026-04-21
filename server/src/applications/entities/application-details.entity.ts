@@ -1,10 +1,12 @@
 import { Column, Entity, Index, JoinColumn, OneToOne } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { Application } from './application.entity';
 import { ResearchArea } from '../enums/research-area.enum';
 import { StudyType } from '../enums/study-type.enum';
 import { ReviewPathway } from '../enums/review-pathway.enum';
 
+@Auditable()
 @Entity('application_details')
 export class ApplicationDetails extends BaseDomain {
   @Index('idx_app_details_application_id')

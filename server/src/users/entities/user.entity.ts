@@ -1,8 +1,10 @@
 import { Column, Entity, Index, OneToMany } from 'typeorm';
 import { BaseDomain } from '../../common/entities/base-domain.entity';
+import { Auditable } from '../../audit/decorators/auditable.decorator';
 import { Gender, ProfessionalTitle } from '../../common/enums';
 import { UserTenantRole } from '../../user-tenant-roles/entities/user-tenant-role.entity';
 
+@Auditable()
 @Entity('users')
 export class User extends BaseDomain {
   @Index('idx_users_email', { unique: true })

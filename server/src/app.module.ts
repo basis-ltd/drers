@@ -10,6 +10,7 @@ import { UserTenantRolesModule } from './user-tenant-roles/user-tenant-roles.mod
 import { AuthModule } from './auth/auth.module';
 import { ApplicationsModule } from './applications/applications.module';
 import { DocumentsModule } from './documents/documents.module';
+import { AuditModule } from './audit/audit.module';
 
 @Module({
   imports: [
@@ -19,6 +20,7 @@ import { DocumentsModule } from './documents/documents.module';
       cache: true,
     }),
     DatabaseModule,
+    AuditModule,
     TenantsModule,
     UsersModule,
     RolesModule,
