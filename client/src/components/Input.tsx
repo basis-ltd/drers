@@ -17,6 +17,7 @@ import { faSearch, IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import { InputErrorMessage } from './ErrorLabels';
 import CustomTooltip from './CustomTooltip';
 import { Checkbox } from './ui/checkbox';
+import DatePicker from './DatePicker';
 
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   placeholder?: string;
@@ -30,7 +31,8 @@ interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
     | 'search'
     | 'file'
     | 'checkbox'
-    | 'radio';
+    | 'radio'
+    | 'date';
   value?: string;
   onChange?: (e: ChangeEvent<HTMLInputElement>) => void;
   onBlur?: (e: FocusEvent<HTMLInputElement>) => void;
@@ -163,6 +165,45 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
           </label>
           <InputErrorMessage message={errorMessage} />
         </div>
+      );
+    }
+
+    if (type === 'date') {
+      return (
+        <label className={`flex flex-col gap-2 w-full ${labelClassName}`}>
+          <header
+            className={`${
+              label
+                ? 'pl-1 flex items-center gap-1.5 text-[11px] lg:text-[12px] font-light leading-tight text-primary'
+                : 'hidden'
+            }`}
+          >
+            {label}
+            {required && (
+              <CustomTooltip
+                label={required ? `${label} is required` : ''}
+                labelClassName="text-[11px] bg-red-600"
+              >
+                <span className="text-red-600 cursor-pointer">*</span>
+              </CustomTooltip>
+            )}
+          </header>
+          <article className="relative w-full flex flex-col gap-1.5">
+            {isLoading ? (
+              <SkeletonLoader type="input" />
+            ) : (
+              <DatePicker
+                value={value}
+                onChange={onChange}
+                onBlur={onBlur}
+                name={name}
+                disabled={readOnly}
+                placeholder={readOnly ? '' : placeholder}
+              />
+            )}
+            <InputErrorMessage message={errorMessage} />
+          </article>
+        </label>
       );
     }
 

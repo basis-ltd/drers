@@ -1,4 +1,8 @@
-import { ExecutionContext, createParamDecorator } from '@nestjs/common';
+import {
+  ExecutionContext,
+  UnauthorizedException,
+  createParamDecorator,
+} from '@nestjs/common';
 
 export interface JwtUser {
   sub: string;
@@ -8,6 +12,10 @@ export interface JwtUser {
 export const CurrentUser = createParamDecorator(
   (_data: unknown, ctx: ExecutionContext): JwtUser => {
     const req = ctx.switchToHttp().getRequest();
-    return req.user as JwtUser;
+    const user = req.user as JwtUser | undefined;
+    if (!user?.sub) {
+      throw new UnauthorizedException('Authentication required.');
+    }
+    return user;
   },
 );

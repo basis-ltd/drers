@@ -33,7 +33,8 @@ const VERIFICATION_GENERIC_MESSAGE =
 const FORGOT_GENERIC_MESSAGE =
   'If an account exists for that email, a reset link has been sent.';
 
-const sha256 = (input: string) => createHash('sha256').update(input).digest('hex');
+const sha256 = (input: string) =>
+  createHash('sha256').update(input).digest('hex');
 
 interface RequestMeta {
   userAgent?: string | null;
@@ -87,20 +88,29 @@ export class AuthService {
     };
   }
 
-  async register(dto: RegisterDto, meta: RequestMeta = {}): Promise<{ message: string }> {
+  async register(
+    dto: RegisterDto,
+    meta: RequestMeta = {},
+  ): Promise<{ message: string }> {
     const existing = await this.users.findByEmail(dto.email);
 
     // No enumeration: respond identically whether or not the email is new.
     if (existing) {
       if (!existing.emailVerified) {
-        await this.issueVerificationToken(existing.id, existing.email, existing.firstName);
+        await this.issueVerificationToken(
+          existing.id,
+          existing.email,
+          existing.firstName,
+        );
       }
       return { message: VERIFICATION_GENERIC_MESSAGE };
     }
 
     const tenant = await this.tenants.findByCode(RNEC_TENANT_CODE);
     if (!tenant) {
-      this.logger.error(`Default tenant ${RNEC_TENANT_CODE} not found — seed the database.`);
+      this.logger.error(
+        `Default tenant ${RNEC_TENANT_CODE} not found — seed the database.`,
+      );
       throw new NotFoundException('Registration is temporarily unavailable.');
     }
     const role = await this.roles.findRoleByName(RoleName.APPLICANT);
@@ -139,7 +149,9 @@ export class AuthService {
     firstName: string,
   ): Promise<void> {
     const raw = randomBytes(32).toString('hex');
-    const hours = Number(this.config.get<string>('EMAIL_VERIFY_TTL_HOURS') ?? 24);
+    const hours = Number(
+      this.config.get<string>('EMAIL_VERIFY_TTL_HOURS') ?? 24,
+    );
     const expiresAt = new Date(Date.now() + hours * 3600 * 1000);
     await this.users.setEmailVerificationToken(userId, sha256(raw), expiresAt);
     const verifyUrl = `${this.frontendUrl()}/auth/verify?token=${raw}`;
@@ -149,15 +161,21 @@ export class AuthService {
   async verifyEmail(dto: VerifyEmailDto): Promise<{ message: string }> {
     const tokenHash = sha256(dto.token);
     const user = await this.users.findByEmailVerificationTokenHash(tokenHash);
-    if (!user) throw new BadRequestException('Invalid or expired verification link.');
-    if (!user.emailVerificationExpiresAt || user.emailVerificationExpiresAt.getTime() < Date.now()) {
+    if (!user)
+      throw new BadRequestException('Invalid or expired verification link.');
+    if (
+      !user.emailVerificationExpiresAt ||
+      user.emailVerificationExpiresAt.getTime() < Date.now()
+    ) {
       throw new BadRequestException('Invalid or expired verification link.');
     }
     await this.users.markEmailVerified(user.id);
     return { message: 'Email verified. You can now sign in.' };
   }
 
-  async resendVerification(dto: ResendVerificationDto): Promise<{ message: string }> {
+  async resendVerification(
+    dto: ResendVerificationDto,
+  ): Promise<{ message: string }> {
     const user = await this.users.findByEmail(dto.email);
     if (user && !user.emailVerified && user.isActive) {
       await this.issueVerificationToken(user.id, user.email, user.firstName);
@@ -171,16 +189,22 @@ export class AuthService {
   ): Promise<{ user: AuthUserView } & IssuedTokens> {
     const user = await this.users.findByEmail(dto.email);
     // bcrypt.compare against a throwaway hash if user missing — equalises timing.
-    const placeholder = '$2b$12$CwTycUXWue0Thq9StjUM0uJ8.K8iuZZ3VQ6j5W5xM3Z3yBfRw9cMa';
-    const passwordOk = await bcrypt.compare(dto.password, user?.passwordHash ?? placeholder);
+    const placeholder =
+      '$2b$12$CwTycUXWue0Thq9StjUM0uJ8.K8iuZZ3VQ6j5W5xM3Z3yBfRw9cMa';
+    const passwordOk = await bcrypt.compare(
+      dto.password,
+      user?.passwordHash ?? placeholder,
+    );
     if (!user || !passwordOk) {
-      throw new UnauthorizedException('Invalid email or password.');
+      throw new BadRequestException('Invalid email or password.');
     }
     if (!user.isActive) {
       throw new ForbiddenException('Your account has been disabled.');
     }
     if (!user.emailVerified) {
-      throw new ForbiddenException('Please verify your email before signing in.');
+      throw new ForbiddenException(
+        'Please verify your email before signing in.',
+      );
     }
 
     await this.users.updateLastLogin(user.id);
@@ -197,7 +221,8 @@ export class AuthService {
     refreshToken: string,
     meta: RequestMeta = {},
   ): Promise<{ user: AuthUserView } & IssuedTokens> {
-    const { userId, keepSignedIn } = await this.tokens.verifyAndConsumeRefresh(refreshToken);
+    const { userId, keepSignedIn } =
+      await this.tokens.verifyAndConsumeRefresh(refreshToken);
     const user = await this.users.findOne(userId);
     if (!user || !user.isActive) {
       throw new UnauthorizedException('Account not available.');
@@ -219,7 +244,9 @@ export class AuthService {
     const user = await this.users.findByEmail(dto.email);
     if (user && user.isActive) {
       const raw = randomBytes(32).toString('hex');
-      const minutes = Number(this.config.get<string>('PASSWORD_RESET_TTL_MINUTES') ?? 60);
+      const minutes = Number(
+        this.config.get<string>('PASSWORD_RESET_TTL_MINUTES') ?? 60,
+      );
       const expiresAt = new Date(Date.now() + minutes * 60 * 1000);
       await this.resetRepo.save(
         this.resetRepo.create({
@@ -229,7 +256,12 @@ export class AuthService {
         }),
       );
       const resetUrl = `${this.frontendUrl()}/auth/reset?token=${raw}`;
-      await this.email.sendPasswordResetEmail(user.email, user.firstName, resetUrl, minutes);
+      await this.email.sendPasswordResetEmail(
+        user.email,
+        user.firstName,
+        resetUrl,
+        minutes,
+      );
     } else {
       // Equalise timing a bit — dummy bcrypt work.
       await bcrypt.hash(dto.email, 4);

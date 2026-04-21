@@ -1,4 +1,4 @@
-import { Button } from "@/components/ui/button";
+import Button from "@/components/Button";
 import {
   Command,
   CommandEmpty,
@@ -105,10 +105,10 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
             render={(props) => {
               const { className: triggerClassName, ...triggerRest } = props;
               return isLoading ? (
-                <button
-                  type="button"
+                <Button
                   {...triggerRest}
                   disabled
+                  variant="default"
                   className={cn(
                     "w-full rounded-md border border-input bg-background px-2 py-2 text-left",
                     className,
@@ -116,12 +116,10 @@ const Combobox = forwardRef<HTMLDivElement, ComboboxProps>(
                   )}
                 >
                   <SkeletonLoader type="input" height="2.5rem" className="w-full" />
-                </button>
+                </Button>
               ) : (
                 <Button
-                  type="button"
                   {...triggerRest}
-                  variant="outline"
                   role="combobox"
                   aria-expanded={open}
                   className={cn(

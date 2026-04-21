@@ -6,13 +6,16 @@ import {
   ParseUUIDPipe,
   Post,
   Query,
+  UseGuards,
 } from '@nestjs/common';
+import { JwtAuthGuard } from '../../auth/guards/jwt-auth.guard';
 import { CurrentUser } from '../../auth/decorators/current-user.decorator';
 import type { JwtUser } from '../../auth/decorators/current-user.decorator';
 import { ApplicationsService } from '../services/applications.service';
 import { CreateApplicationDto } from '../dto/create-application.dto';
 import { ListApplicationsDto } from '../dto/list-applications.dto';
 
+@UseGuards(JwtAuthGuard)
 @Controller('applications')
 export class ApplicationsController {
   constructor(private readonly applicationsService: ApplicationsService) {}
@@ -24,7 +27,7 @@ export class ApplicationsController {
 
   @Get()
   findAll(@Query() query: ListApplicationsDto, @CurrentUser() user: JwtUser) {
-    return this.applicationsService.findAll(user.sub, query);
+    return this.applicationsService.findAll(user?.sub ?? '', query);
   }
 
   @Get(':id')
@@ -36,10 +39,7 @@ export class ApplicationsController {
   }
 
   @Post(':id/submit')
-  submit(
-    @Param('id', ParseUUIDPipe) id: string,
-    @CurrentUser() user: JwtUser,
-  ) {
+  submit(@Param('id', ParseUUIDPipe) id: string, @CurrentUser() user: JwtUser) {
     return this.applicationsService.submit(id, user.sub);
   }
 

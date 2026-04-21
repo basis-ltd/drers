@@ -1,13 +1,13 @@
 import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { FC, MouseEventHandler, ReactNode } from "react";
+import { CSSProperties, FC, MouseEventHandler, ReactNode } from "react";
 import { Link } from "react-router-dom";
 import Loader from "./Loader";
 
 interface ButtonProps {
   route?: string;
   value?: ReactNode;
-  onClick?: MouseEventHandler<HTMLAnchorElement>;
+  onClick?: MouseEventHandler<HTMLElement>;
   type?: "submit" | "button" | "reset";
   disabled?: boolean;
   primary?: boolean;
@@ -18,6 +18,11 @@ interface ButtonProps {
   icon?: IconProp;
   isLoading?: boolean;
   children?: ReactNode;
+  variant?: string;
+  size?: string;
+  role?: string;
+  style?: CSSProperties;
+  [key: string]: unknown;
 }
 
 const Button: FC<ButtonProps> = ({
@@ -34,8 +39,11 @@ const Button: FC<ButtonProps> = ({
   icon = undefined,
   isLoading = false,
   children,
+  role,
+  style,
+  ...rest
 }) => {
-  const baseStyles = `py-[1px] h-9 px-4 font-light leading-tight flex items-center gap-1.5 justify-center text-center border border-[1px] border-primary rounded-md text-[11px] sm:text-[11px] md:text-[11px] lg:text-[12px] text-primary bg-white hover:bg-primary hover:text-white cursor-pointer ease-in-out duration-200 hover:scale-[1.01]
+  const baseStyles = `py-[6px] px-4 font-light leading-tight flex items-center gap-1.5 justify-center text-center border border-[1px] border-primary rounded-md text-primary bg-white hover:bg-primary hover:text-white cursor-pointer ease-in-out duration-200 hover:scale-[1.01]
     sm:gap-1 md:gap-1.5 lg:gap-1.5
     ${
       !styled &&
@@ -52,16 +60,19 @@ const Button: FC<ButtonProps> = ({
     }
     ${
       disabled &&
-      "bg-secondary! shadow-none! hover:scale-[1]! cursor-default! hover:bg-secondary! hover:text-opacity-80 duration-0! text-white text-opacity-80 border-none! text-center transition-all"
+      "bg-secondary! shadow-none! hover:scale-[1]! cursor-not-allowed! hover:bg-secondary! hover:text-opacity-80 duration-0! text-white text-opacity-80 border-none! text-center transition-all"
     }`;
 
-  if (submit || type === "submit") {
+  if (submit || type === "submit" || route === "#") {
     return (
       <button
-        type={type || "submit"}
-        onClick={onClick as unknown as MouseEventHandler<HTMLButtonElement> | undefined}
+        type={type || "button"}
+        onClick={onClick as MouseEventHandler<HTMLButtonElement> | undefined}
         className={baseStyles}
         disabled={disabled}
+        role={role}
+        style={style}
+        {...(rest as Record<string, unknown>)}
       >
         {isLoading ? (
           <Loader className={primary ? "text-white" : "text-primary"} />
@@ -92,7 +103,10 @@ const Button: FC<ButtonProps> = ({
           onClick(e);
         }
       }}
-      className={baseStyles}
+      className={`${baseStyles} text-[12px]!`}
+      role={role}
+      style={style}
+      {...(rest as Record<string, unknown>)}
     >
       {isLoading ? (
         <Loader className={primary ? "text-white" : "text-primary"} />

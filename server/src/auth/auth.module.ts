@@ -28,7 +28,13 @@ import { RefreshToken } from './entities/refresh-token.entity';
     UserTenantRolesModule,
   ],
   controllers: [AuthController],
-  providers: [AuthService, TokensService, EmailService, JwtAccessStrategy, JwtAuthGuard],
+  providers: [
+    AuthService,
+    TokensService,
+    EmailService,
+    JwtAccessStrategy,
+    JwtAuthGuard,
+  ],
   exports: [AuthService, JwtAuthGuard],
 })
 export class AuthModule {}

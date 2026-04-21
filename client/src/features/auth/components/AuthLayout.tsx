@@ -70,7 +70,7 @@ export function AuthLayout({ children }: AuthLayoutProps) {
         <section className="relative z-10 max-w-md space-y-8 py-10">
           <h1
             id={`${formId}-hero-heading`}
-            className="font-heading text-3xl text-white! font-semibold leading-tight tracking-tight sm:text-4xl"
+            className="heading-auth text-white! leading-tight sm:text-[30px]"
           >
             Research Ethics Review System
           </h1>

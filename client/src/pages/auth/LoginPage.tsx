@@ -60,7 +60,7 @@ export function LoginPage() {
   return (
     <AuthLayout>
       <header className="mb-8 space-y-2 text-left">
-        <h2 className="font-heading text-3xl font-semibold tracking-tight text-primary">
+        <h2 className="heading-auth">
           Welcome back
         </h2>
         <p className="text-muted-foreground">

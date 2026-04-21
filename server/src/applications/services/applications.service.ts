@@ -64,8 +64,8 @@ export class ApplicationsService {
     const qb = this.applicationRepo
       .createQueryBuilder('app')
       .leftJoinAndSelect('app.details', 'details')
-      .where('app.applicant_id = :userId', { userId })
-      .orderBy('app.created_at', 'DESC')
+      .where('app.applicantId = :userId', { userId })
+      .orderBy('app.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
 
