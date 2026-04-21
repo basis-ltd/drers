@@ -46,9 +46,10 @@ export function Table<TData>({
   const canGoNext = pagination ? pagination.page < totalPages : false;
 
   return (
-    <article className="overflow-hidden rounded-md bg-white shadow-sm">
+    <article className="overflow-hidden rounded-lg border border-primary/10 bg-white shadow-sm">
       {isLoading ? (
-        <section className="space-y-px p-4">
+        <section className="space-y-px p-4" aria-busy="true" aria-live="polite">
+          <p className="sr-only">Loading table data</p>
           {Array.from({ length: loadingRows }).map((_, i) => (
             <span
               key={i}
@@ -58,7 +59,7 @@ export function Table<TData>({
         </section>
       ) : data.length === 0 ? (
         (emptyState ?? (
-          <section className="py-16 text-center text-[12px] text-primary/45">
+          <section className="py-16 text-center text-[13px] text-primary/60">
             No records found.
           </section>
         ))
@@ -76,7 +77,7 @@ export function Table<TData>({
                       <th
                         key={header.id}
                         scope="col"
-                        className="px-5 py-3 text-left text-[12px]! font-medium text-primary/80 whitespace-nowrap"
+                        className="px-5 py-3 text-left text-[12px]! font-semibold text-primary/80 whitespace-nowrap"
                       >
                         {header.isPlaceholder
                           ? null
@@ -98,7 +99,7 @@ export function Table<TData>({
                     {row.getVisibleCells().map((cell) => (
                       <td
                         key={cell.id}
-                        className="px-5 text-[11px]! py-3.5 align-middle"
+                        className="px-5 py-3.5 text-[12px]! align-middle"
                       >
                         {flexRender(
                           cell.column.columnDef.cell,
@@ -114,7 +115,7 @@ export function Table<TData>({
 
           {pagination && totalPages > 1 && (
             <footer className="flex items-center justify-between border-t border-primary/8 bg-background/40 px-4 py-3">
-              <p className="text-[11px] text-primary/50">
+              <p className="text-[12px] text-primary/60">
                 Page {pagination.page} of {totalPages}
               </p>
               <section className="flex items-center gap-2">

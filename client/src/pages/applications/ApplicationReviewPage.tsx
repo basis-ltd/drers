@@ -47,7 +47,11 @@ export function ApplicationReviewPage() {
   if (appLoading || reviewLoading || rolesLoading) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-primary/50">Loading review…</p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-primary/10 bg-white p-6 shadow-sm">
+          <p className="text-[14px] text-primary/70" role="status">
+            Loading review workspace...
+          </p>
+        </div>
       </main>
     );
   }
@@ -55,9 +59,11 @@ export function ApplicationReviewPage() {
   if (!canReview) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-red-600">
-          You don&rsquo;t have permission to review applications.
-        </p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-red-200 bg-red-50 p-6">
+          <p className="text-[14px] text-red-800" role="alert">
+            You do not have permission to review applications.
+          </p>
+        </div>
       </main>
     );
   }
@@ -66,9 +72,11 @@ export function ApplicationReviewPage() {
   if (appErrorStatus === 403) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-red-600">
-          You don&rsquo;t have permission to view this application.
-        </p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-red-200 bg-red-50 p-6">
+          <p className="text-[14px] text-red-800" role="alert">
+            You do not have permission to view this application.
+          </p>
+        </div>
       </main>
     );
   }
@@ -76,11 +84,13 @@ export function ApplicationReviewPage() {
   if (appError || !application) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-red-600">
-          {appErrorStatus === 404
-            ? 'Application not found.'
-            : 'Failed to load application.'}
-        </p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-red-200 bg-red-50 p-6">
+          <p className="text-[14px] text-red-800" role="alert">
+            {appErrorStatus === 404
+              ? 'Application not found.'
+              : 'Failed to load application.'}
+          </p>
+        </div>
       </main>
     );
   }
@@ -89,9 +99,11 @@ export function ApplicationReviewPage() {
   if (reviewErrorStatus === 403) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-red-600">
-          You don&rsquo;t have permission to access this review.
-        </p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-red-200 bg-red-50 p-6">
+          <p className="text-[14px] text-red-800" role="alert">
+            You do not have permission to access this review.
+          </p>
+        </div>
       </main>
     );
   }
@@ -99,11 +111,13 @@ export function ApplicationReviewPage() {
   if (reviewError || !review) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-red-600">
-          {reviewErrorStatus === 404
-            ? 'Review workspace is not available for this application.'
-            : 'Failed to load review workspace.'}
-        </p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-red-200 bg-red-50 p-6">
+          <p className="text-[14px] text-red-800" role="alert">
+            {reviewErrorStatus === 404
+              ? 'Review workspace is not available for this application.'
+              : 'Failed to load review workspace.'}
+          </p>
+        </div>
       </main>
     );
   }
@@ -111,11 +125,13 @@ export function ApplicationReviewPage() {
   if (!isReviewEligible(application.status)) {
     return (
       <main className="px-4 py-8 md:px-8">
-        <p className="text-[12px] text-primary/55">
-          This application is in status{' '}
-          <strong className="text-primary">{application.status}</strong> and is
-          not open for review.
-        </p>
+        <div className="mx-auto w-full max-w-[1280px] rounded-lg border border-primary/12 bg-white p-6 shadow-sm">
+          <p className="text-[14px] text-primary/70">
+            This application is in status{' '}
+            <strong className="text-primary">{application.status}</strong> and is
+            not open for review.
+          </p>
+        </div>
       </main>
     );
   }
@@ -125,22 +141,31 @@ export function ApplicationReviewPage() {
 
   return (
     <main className="min-h-full px-4 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px]">
       <nav className="mb-4 flex items-center justify-between gap-3">
         <Link
           to={`/applications/${application.id}`}
-          className="inline-flex items-center gap-1.5 text-[11px] text-primary/55 hover:text-primary"
+          className="inline-flex items-center gap-1.5 rounded-md px-2 py-1 text-[12px] text-primary/65 hover:bg-primary/5 hover:text-primary"
         >
           <FontAwesomeIcon icon={faChevronLeft} className="size-2.5" />
           Back to details
         </Link>
       </nav>
 
+      <header className="mb-5 rounded-lg border border-primary/10 bg-white p-5 shadow-sm">
+        <p className="eyebrow-label">Review workspace</p>
+        <h1 className="heading-page mt-1">Application review</h1>
+        <p className="mt-1 text-[13px] text-primary/65">
+          Evaluate application evidence, capture reviewer feedback, and record decisions.
+        </p>
+      </header>
+
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="flex min-w-0 flex-col gap-5">
           <ApplicationSummaryCard application={application} />
           <ApplicationSectionGrid application={application} />
           <section>
-            <h2 className="mb-3 font-heading text-[18px] text-primary">
+            <h2 className="heading-section mb-3">
               Documents & extraction
             </h2>
             <DocumentList documents={documents} />
@@ -148,8 +173,8 @@ export function ApplicationReviewPage() {
         </section>
 
         <aside className="lg:sticky lg:top-6 lg:h-fit">
-          <div className="rounded-md border-l-2 border-primary/15 bg-white px-5 py-5">
-            <p className="mb-4 text-[10px] font-medium tracking-[0.18em] text-primary/45 uppercase">
+          <div className="rounded-lg border border-primary/10 bg-white px-5 py-5 shadow-sm">
+            <p className="mb-4 text-[11px] font-medium tracking-[0.16em] text-primary/55 uppercase">
               Review workbench
             </p>
             <ReviewStageStepper stage={review.stage} />
@@ -163,7 +188,7 @@ export function ApplicationReviewPage() {
             </div>
             {review.stage !== 'PENDING_ASSIGNMENT' && (
               <div className="mt-6 border-t border-primary/8 pt-5">
-                <p className="mb-3 text-[10px] font-medium tracking-[0.18em] text-primary/45 uppercase">
+                <p className="mb-3 text-[11px] font-medium tracking-[0.16em] text-primary/55 uppercase">
                   Activity
                 </p>
                 <ReviewTimeline review={review} />
@@ -171,6 +196,7 @@ export function ApplicationReviewPage() {
             )}
           </div>
         </aside>
+      </div>
       </div>
     </main>
   );
@@ -236,9 +262,9 @@ function ActionPanel({
 
 function EmptyState({ title, body }: { title: string; body: string }) {
   return (
-    <div className="rounded-sm border border-dashed border-primary/15 px-3 py-4 text-[12px]">
-      <p className="font-medium text-primary">{title}</p>
-      <p className="mt-0.5 text-primary/55">{body}</p>
+    <div className="rounded-md border border-dashed border-primary/20 bg-primary/[0.015] px-3.5 py-4 text-[13px]">
+      <p className="font-medium text-primary/90">{title}</p>
+      <p className="mt-1 text-primary/65">{body}</p>
     </div>
   );
 }

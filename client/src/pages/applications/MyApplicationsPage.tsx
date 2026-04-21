@@ -167,7 +167,7 @@ export function MyApplicationsPage() {
               trigger={<TableActionButtonTrigger />}
               className="flex gap-2"
             >
-              <menu className="w-full flex flex-col gap-1">
+              <ul className="flex w-full flex-col gap-1">
                 <TableActionButton
                   to={`/applications/${row.original.id}`}
                   label="View"
@@ -187,7 +187,7 @@ export function MyApplicationsPage() {
                     icon={faGavel}
                   />
                 )}
-              </menu>
+              </ul>
             </CustomPopover>
           );
         },
@@ -222,11 +222,13 @@ export function MyApplicationsPage() {
 
   return (
     <main className="min-h-full px-4 py-8 md:px-8">
+      <div className="mx-auto w-full max-w-[1280px]">
       {/* Header */}
-      <header className="mb-6 flex items-start justify-between gap-4">
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <section>
+          <p className="eyebrow-label">Application workspace</p>
           <h1 className="heading-page">My Applications</h1>
-          <p className="mt-0.5 text-[11px] text-primary/50">
+          <p className="mt-1 text-[13px] text-primary/65">
             Track and manage all your research ethics submissions
           </p>
         </section>
@@ -239,16 +241,16 @@ export function MyApplicationsPage() {
       </header>
 
       {/* Filters + Search */}
-      <section className="mb-4 flex flex-wrap items-center gap-3">
+      <section className="mb-5 flex flex-wrap items-center gap-3 rounded-lg border border-primary/10 bg-white p-3 shadow-sm">
         {canToggleScope && (
           <nav
             aria-label="Application view scope"
-            className="flex flex-wrap gap-1 rounded-md border border-primary/10 bg-white p-1"
+            className="flex flex-wrap gap-1 rounded-md border border-primary/15 bg-white p-1"
           >
             <button
               type="button"
               onClick={() => setScopeAndResetFilters("MY")}
-              className={`rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors ${
+              className={`rounded-md px-3.5 py-2 text-[12px] font-medium transition-colors ${
                 activeScope === "MY"
                   ? "bg-primary text-primary-foreground"
                   : "text-primary/50 hover:bg-primary/6 hover:text-primary"
@@ -259,7 +261,7 @@ export function MyApplicationsPage() {
             <button
               type="button"
               onClick={() => setScopeAndResetFilters("REVIEW")}
-              className={`rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors ${
+              className={`rounded-md px-3.5 py-2 text-[12px] font-medium transition-colors ${
                 activeScope === "REVIEW"
                   ? "bg-primary text-primary-foreground"
                   : "text-primary/50 hover:bg-primary/6 hover:text-primary"
@@ -274,6 +276,7 @@ export function MyApplicationsPage() {
           trigger={
             <button
               type="button"
+              aria-label="Filter applications by status"
               className="inline-flex h-10 items-center gap-2 rounded-md border border-primary/15 bg-white px-3 text-[11px] font-medium text-primary/60 hover:bg-primary/6 hover:text-primary"
             >
               <FontAwesomeIcon icon={faFilter} />
@@ -284,7 +287,7 @@ export function MyApplicationsPage() {
           className="min-w-[250px]"
         >
           <section className="flex flex-col gap-2">
-            <menu className="flex max-h-[48vh] flex-col gap-1 overflow-y-auto">
+            <ul className="flex max-h-[48vh] flex-col gap-1 overflow-y-auto">
               {ALL_APPLICATION_STATUSES.map((status) => {
                 const checked = activeStatuses.includes(status);
                 const statusLabel = STATUS_CONFIG[status]?.label ?? status;
@@ -301,17 +304,17 @@ export function MyApplicationsPage() {
                       }
                       className="accent-primary"
                     />
-                    <span className="text-[12px] text-secondary">
+                    <span className="text-[13px] text-secondary">
                       {capitalizeString(statusLabel)}
                     </span>
                   </label>
                 );
               })}
-            </menu>
+            </ul>
             <div className="mt-1 flex items-center justify-between gap-2 border-t border-primary/10 pt-2">
               <button
                 type="button"
-                className="rounded-md border border-primary/10 px-2 py-1 text-[11px] text-secondary hover:bg-background"
+                className="rounded-md border border-primary/10 px-2.5 py-1.5 text-[12px] text-secondary hover:bg-background"
                 onClick={() => {
                   setSelectedStatuses([]);
                   setPage(1);
@@ -321,7 +324,7 @@ export function MyApplicationsPage() {
               </button>
               <button
                 type="button"
-                className="rounded-md border border-primary/10 px-2 py-1 text-[11px] text-secondary hover:bg-background"
+                className="rounded-md border border-primary/10 px-2.5 py-1.5 text-[12px] text-secondary hover:bg-background"
                 onClick={() => {
                   setSelectedStatuses(ALL_APPLICATION_STATUSES);
                   setPage(1);
@@ -343,7 +346,7 @@ export function MyApplicationsPage() {
               setPage(1);
             }}
             showSearchSuffix
-            className="w-56"
+            className="w-64"
           />
         </section>
       </section>
@@ -361,6 +364,7 @@ export function MyApplicationsPage() {
           onPageChange: setPage,
         }}
       />
+      </div>
     </main>
   );
 }
@@ -377,12 +381,12 @@ function EmptyState({
   return (
     <section className="flex flex-col items-center justify-center py-20 text-center">
       <figure
-        className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/6"
+        className="mb-4 flex size-12 items-center justify-center rounded-full bg-primary/8"
         aria-hidden
       >
         <FontAwesomeIcon icon={faFile} className="size-6 text-primary/30" />
       </figure>
-      <p className="text-[13px] font-medium text-primary/60">
+      <p className="text-[14px] font-medium text-primary/70">
         {hasSearch
           ? "No applications match your search."
           : `No applications found in ${scopeLabel}.`}
@@ -392,7 +396,7 @@ function EmptyState({
           primary
           route="/applications/new"
           value="Start New Application"
-          className="mt-4 text-[11px]"
+          className="mt-4 text-[12px]"
         />
       )}
     </section>

@@ -35,9 +35,13 @@ export const TableActionButtonTrigger = ({
   className?: string;
 }) => {
   return (
-    <FontAwesomeIcon
-      icon={faEllipsisH}
-      className={cn(ellipsisHClassName, className)}
-    />
+    <span className="inline-flex items-center">
+      <span className="sr-only">Open row actions</span>
+      <FontAwesomeIcon
+        icon={faEllipsisH}
+        aria-hidden
+        className={cn(ellipsisHClassName, className)}
+      />
+    </span>
   );
 };

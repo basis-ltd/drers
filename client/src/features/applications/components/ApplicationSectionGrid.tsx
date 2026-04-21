@@ -251,12 +251,12 @@ function Section({
 }) {
   return (
     <section
-      className={`rounded-md border border-primary/10 bg-stone-50/65 p-5 md:p-6 ${
+      className={`rounded-lg border border-primary/10 bg-primary/[0.015] p-5 shadow-sm md:p-6 ${
         staggered ? 'animate-[sectionReveal_420ms_ease-out_both]' : ''
       }`}
       style={staggered ? { animationDelay: `${order * 80}ms` } : undefined}
     >
-      <h2 className="mb-4 font-heading text-[18px] leading-tight text-primary">
+      <h2 className="mb-4 font-heading text-[20px] leading-tight text-primary">
         {title}
       </h2>
       {children}
@@ -265,7 +265,7 @@ function Section({
 }
 
 function Grid({ children }: { children: ReactNode }) {
-  return <dl className="grid gap-x-6 gap-y-3 sm:grid-cols-2">{children}</dl>;
+  return <dl className="grid gap-x-6 gap-y-4 sm:grid-cols-2">{children}</dl>;
 }
 
 function Field({
@@ -279,14 +279,14 @@ function Field({
 }) {
   return (
     <div className={wide ? 'sm:col-span-2' : ''}>
-      <dt className="text-[10px] font-medium tracking-wider text-primary/45 uppercase">
+      <dt className="text-[11px] font-medium tracking-[0.12em] text-primary/55 uppercase">
         {label}
       </dt>
-      <dd className="mt-0.5 text-[12.5px] text-primary">
+      <dd className="mt-1 text-[14px] leading-[1.5] text-primary/90">
         {value && value.length > 0 ? (
           value
         ) : (
-          <span className="text-primary/25">Not provided</span>
+          <span className="text-primary/45">Not provided</span>
         )}
       </dd>
     </div>
@@ -302,15 +302,15 @@ function LongField({
 }) {
   return (
     <div className="mb-3 last:mb-0">
-      <p className="mb-1 text-[10px] font-medium tracking-wider text-primary/45 uppercase">
+      <p className="mb-1 text-[11px] font-medium tracking-[0.12em] text-primary/55 uppercase">
         {label}
       </p>
       {value ? (
-        <p className="text-[12.5px] leading-relaxed whitespace-pre-wrap text-primary">
+        <p className="text-[14px] leading-relaxed whitespace-pre-wrap text-primary/90">
           {value}
         </p>
       ) : (
-        <p className="text-[12.5px] text-primary/25">Not provided</p>
+        <p className="text-[14px] text-primary/45">Not provided</p>
       )}
     </div>
   );

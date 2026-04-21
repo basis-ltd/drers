@@ -1,3 +1,4 @@
+@import url('https://fonts.googleapis.com/css2?family=Work+Sans:ital,wght@0,100..900;1,100..900&display=swap');
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
@@ -8,64 +9,107 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* RNEC palette (Coolors) — primary #0D1B2A */
-  --rnec-900: #0d1b2a;
-  --rnec-800: #1b263b;
-  --rnec-600: #415a77;
-  --rnec-400: #778da9;
-  --rnec-100: #e0e1dd;
+  --color-brand-950: #011627;
+  --color-brand-900: #02203a;
+  --color-brand-800: #0a3150;
+  --color-brand-700: #114364;
+  --color-brand-600: #1a5678;
+  --color-brand-500: #2d6a8c;
+  --color-brand-400: #4c87a8;
+  --color-brand-300: #84b3cf;
+  --color-brand-200: #bdd8e8;
+  --color-brand-100: #e8f2f8;
 
-  /* Document copy (prefer these over `text-foreground` for base surfaces) */
-  --text: var(--rnec-600);
-  --text-h: var(--rnec-900);
-  --border: oklch(0.922 0 0);
+  --color-bg-canvas: #fcfcff;
+  --color-bg-surface: #ffffff;
+  --color-bg-surface-muted: #f7f8fc;
+  --color-bg-surface-subtle: #f2f4f8;
 
-  --sans: system-ui, 'Segoe UI', Roboto, sans-serif;
+  --color-border-soft: #e6eaf0;
+  --color-border-strong: #d7dde7;
+
+  --color-text-primary: #0f172a;
+  --color-text-secondary: #475569;
+  --color-text-muted: #64748b;
+  --color-text-disabled: #94a3b8;
+
+  --color-success-text: #0f6b46;
+  --color-success-bg: #eaf7f0;
+  --color-success-border: #b7e2c8;
+  --color-warning-text: #8a5a00;
+  --color-warning-bg: #fff6e5;
+  --color-warning-border: #f3d89b;
+  --color-danger-text: #a33232;
+  --color-danger-bg: #fdeeee;
+  --color-danger-border: #f0c5c5;
+  --color-info-text: #1d4e89;
+  --color-info-bg: #eaf2fc;
+  --color-info-border: #c8daf2;
+
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+  --radius: var(--radius-md);
+
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+  --shadow-md: 0 6px 18px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 12px 32px rgba(15, 23, 42, 0.08);
+
+  /* Legacy aliases retained while moving to design tokens */
+  --rnec-900: var(--color-brand-950);
+  --rnec-800: var(--color-brand-900);
+  --rnec-600: var(--color-brand-600);
+  --rnec-400: var(--color-brand-400);
+  --rnec-100: var(--color-brand-100);
+  --text: var(--color-text-secondary);
+  --text-h: var(--color-text-primary);
+  --border: var(--color-border-soft);
+  --sans: 'Geist Variable', 'Inter', 'IBM Plex Sans', 'Segoe UI', system-ui, sans-serif;
 
   /* shadcn / Tailwind semantic tokens */
-  --background: oklch(0.985 0.004 95); /* stone paper */
-  /* Kept for components using `text-foreground`; matches headline ink */
-  --foreground: oklch(0.145 0 0);
+  --background: var(--color-bg-canvas);
+  --foreground: var(--color-text-primary);
+  --card: var(--color-bg-surface);
+  --card-foreground: var(--color-text-primary);
+  --popover: var(--color-bg-surface);
+  --popover-foreground: var(--color-text-primary);
+  --primary: var(--color-brand-950);
+  --primary-foreground: #ffffff;
+  --secondary: var(--color-bg-surface-muted);
+  --secondary-foreground: var(--color-text-primary);
+  --muted: var(--color-bg-surface-subtle);
+  --muted-foreground: var(--color-text-muted);
+  --accent: var(--color-brand-100);
+  --accent-foreground: var(--color-brand-900);
+  --destructive: var(--color-danger-text);
+  --input: var(--color-border-soft);
+  --ring: var(--color-brand-300);
 
-  --card: oklch(1 0 0);
-  --card-foreground: oklch(0.145 0 0);
+  --chart-1: #0a3150;
+  --chart-2: #2d6a8c;
+  --chart-3: #5b6cff;
+  --chart-4: #3d8d6d;
+  --chart-5: #e39b2d;
 
-  --popover: oklch(1 0 0);
-  --popover-foreground: oklch(0.145 0 0);
-
-  --primary: oklch(0.205 0 0);
-  --primary-foreground: oklch(0.985 0 0);
-
-  --secondary: oklch(0.97 0 0);
-  --secondary-foreground: oklch(0.205 0 0);
-
-  --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.556 0 0);
-
-  --accent: oklch(0.97 0 0);
-  --accent-foreground: oklch(0.205 0 0);
-
-  --destructive: oklch(0.577 0.245 27.325);
-
-  --input: oklch(0.922 0 0);
-  --ring: oklch(0.708 0 0);
-
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-
-  --radius: 0.625rem;
-
-  --sidebar: oklch(0.985 0 0);
-  --sidebar-foreground: oklch(0.145 0 0);
-  --sidebar-primary: oklch(0.205 0 0);
-  --sidebar-primary-foreground: oklch(0.985 0 0);
-  --sidebar-accent: oklch(0.97 0 0);
-  --sidebar-accent-foreground: oklch(0.205 0 0);
-  --sidebar-border: oklch(0.922 0 0);
-  --sidebar-ring: oklch(0.708 0 0);
+  --sidebar: var(--color-brand-950);
+  --sidebar-foreground: #f3f7fb;
+  --sidebar-primary: var(--color-brand-700);
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: rgba(255, 255, 255, 0.08);
+  --sidebar-accent-foreground: #ffffff;
+  --sidebar-border: rgba(255, 255, 255, 0.12);
+  --sidebar-ring: var(--color-brand-300);
 }
 
 #root {
@@ -133,7 +177,7 @@ body {
   background: var(--background);
   color: var(--text);
   font-family: var(--sans);
-  line-height: 1.5;
+  line-height: 1.57;
 }
 
 *,
@@ -245,12 +289,38 @@ textarea:-webkit-autofill:active {
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    font-family: 'Work Sans', sans-serif;
   }
   body {
     @apply bg-background text-foreground;
+    font-family: 'Work Sans', sans-serif;
   }
   html {
     @apply font-sans;
+    font-family: 'Work Sans', sans-serif;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-brand-300);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  .heading-page {
+    @apply font-heading text-[28px] leading-[1.28] font-semibold text-primary;
+  }
+
+  .heading-section {
+    @apply font-heading text-[20px] leading-[1.35] font-semibold text-primary;
+  }
+
+  .eyebrow-label {
+    @apply text-[11px] leading-4 font-medium tracking-[0.14em] uppercase text-primary/55;
+  }
+
+  .meta-text {
+    @apply text-[12px] leading-[1.45] text-primary/65;
   }
 }
 
@@ -262,5 +332,15 @@ textarea:-webkit-autofill:active {
   to {
     opacity: 1;
     transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  * {
+    scroll-behavior: auto !important;
+  }
+
+  .animate-\[sectionReveal_420ms_ease-out_both\] {
+    animation: none !important;
   }
 }
