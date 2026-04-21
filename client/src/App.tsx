@@ -13,6 +13,7 @@ import { VerifyEmailPage } from '@/pages/auth/VerifyEmailPage';
 import { DashboardPage } from '@/pages/dashboard/DashboardPage';
 import { MyApplicationsPage } from '@/pages/applications/MyApplicationsPage';
 import { NewApplicationPage } from '@/pages/applications/NewApplicationPage';
+import { ApplicationSubmittedPage } from '@/pages/applications/ApplicationSubmittedPage';
 
 // Layout
 import { AppLayout } from '@/components/layout/AppLayout';
@@ -56,6 +57,7 @@ export default function App() {
       <Route path="/applications"          element={<ProtectedRoute><MyApplicationsPage /></ProtectedRoute>} />
       <Route path="/applications/new"      element={<ProtectedRoute><NewApplicationPage /></ProtectedRoute>} />
       <Route path="/applications/:id/edit" element={<ProtectedRoute><NewApplicationPage /></ProtectedRoute>} />
+      <Route path="/applications/:id/submitted" element={<ProtectedRoute><ApplicationSubmittedPage /></ProtectedRoute>} />
 
       {/* Fallback */}
       <Route path="*" element={<Navigate to="/dashboard" replace />} />

@@ -35,6 +35,15 @@ const schema = z.object({
 
 type FormValues = z.infer<typeof schema>;
 
+const DEFAULT_CONSENT_WAIVER: ConsentWaiver = "NO";
+const DEFAULT_CONFLICT_OF_INTEREST: ConflictOfInterest = "NONE";
+
+const normalizeConsentWaiver = (value: string): ConsentWaiver =>
+  value === "YES" || value === "NO" ? value : DEFAULT_CONSENT_WAIVER;
+
+const normalizeConflictOfInterest = (value: string): ConflictOfInterest =>
+  value === "YES" || value === "NONE" ? value : DEFAULT_CONFLICT_OF_INTEREST;
+
 interface Step4EthicsProps {
   applicationId: string;
   initialData: ApplicationEthics | null;
@@ -53,12 +62,14 @@ export function Step4Ethics({ applicationId, initialData }: Step4EthicsProps) {
           benefits: data.benefits,
           vulnerablePopulations: data.vulnerablePopulations,
           consentProcess: data.consentProcess,
-          consentWaiver: data.consentWaiver as ConsentWaiver,
+          consentWaiver: normalizeConsentWaiver(data.consentWaiver),
           consentWaiverJustification:
             data.consentWaiverJustification || undefined,
           dataStorage: data.dataStorage,
           confidentiality: data.confidentiality,
-          conflictOfInterest: data.conflictOfInterest as ConflictOfInterest,
+          conflictOfInterest: normalizeConflictOfInterest(
+            data.conflictOfInterest,
+          ),
           conflictOfInterestDescription:
             data.conflictOfInterestDescription || undefined,
         },
@@ -84,11 +95,12 @@ export function Step4Ethics({ applicationId, initialData }: Step4EthicsProps) {
       benefits: initialData?.benefits ?? "",
       vulnerablePopulations: initialData?.vulnerablePopulations ?? [],
       consentProcess: initialData?.consentProcess ?? "",
-      consentWaiver: initialData?.consentWaiver ?? "",
+      consentWaiver: initialData?.consentWaiver ?? DEFAULT_CONSENT_WAIVER,
       consentWaiverJustification: initialData?.consentWaiverJustification ?? "",
       dataStorage: initialData?.dataStorage ?? "",
       confidentiality: initialData?.confidentiality ?? "",
-      conflictOfInterest: initialData?.conflictOfInterest ?? "",
+      conflictOfInterest:
+        initialData?.conflictOfInterest ?? DEFAULT_CONFLICT_OF_INTEREST,
       conflictOfInterestDescription:
         initialData?.conflictOfInterestDescription ?? "",
     },

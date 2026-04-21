@@ -15,7 +15,6 @@ import {
   useSubmitApplicationMutation,
 } from '../../api/applicationsApi';
 import { STEPS } from '../../constants/formSteps';
-import type { Application } from '../../api/types';
 import Button from '@/components/Button';
 import CustomBreadcrumb from '@/components/CustomBreadcrumb';
 import { faChartLine, faFile } from '@fortawesome/free-solid-svg-icons';
@@ -31,7 +30,6 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
   const [applicationId, setApplicationId] = useState<string | null>(existingId ?? null);
   const [step, setStep] = useState(1);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
-  const [submitted, setSubmitted] = useState(false);
   const [canSubmit, setCanSubmit] = useState(false);
 
   const [createApplication, { isLoading: creating }] = useCreateApplicationMutation();
@@ -82,16 +80,11 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
     if (!applicationId) return;
     try {
       await submitApplication(applicationId).unwrap();
-      setSubmitted(true);
+      navigate(`/applications/${applicationId}/submitted`);
     } catch {
       toast.error('Submission failed. Please check all required fields and try again.');
     }
   };
-
-  // ── Submitted success screen ───────────────────────────────────────────────
-  if (submitted && application) {
-    return <SubmitSuccessScreen application={application} onNavigate={navigate} />;
-  }
 
   const isLoading = creating || loadingApp;
 
@@ -224,68 +217,5 @@ function StepSkeleton() {
         <span key={i} className="block h-9 w-full animate-pulse rounded-md bg-primary/6" />
       ))}
     </section>
-  );
-}
-
-// ── Success screen ─────────────────────────────────────────────────────────────
-interface SubmitSuccessScreenProps {
-  application: Application;
-  onNavigate: (path: string) => void;
-}
-
-function SubmitSuccessScreen({ application, onNavigate }: SubmitSuccessScreenProps) {
-  const nextSteps = [
-    ['Payment Notification', 'You will receive an invoice by email. Payment is required within 7 days to proceed to screening.'],
-    ['Administrative Screening', 'Your documents will be checked for completeness (2–3 business days).'],
-    ['Reviewer Assignment', 'Your application will be assigned to qualified reviewers.'],
-    ['Decision', "You will be notified of the committee's decision by email and in-app notification."],
-  ] as const;
-
-  return (
-    <main className="flex min-h-full items-start justify-center px-4 py-16">
-      <article className="w-full max-w-lg text-center">
-        <figure className="mx-auto mb-5 flex size-16 items-center justify-center rounded-full bg-green-50">
-          <CheckCircle className="size-8 text-green-600" aria-hidden />
-        </figure>
-
-        <h2 className="mb-2 heading-page font-bold">
-          Application Submitted Successfully
-        </h2>
-        <p className="mb-1 text-[13px] leading-relaxed text-primary/60">
-          Reference:{' '}
-          <strong className="font-semibold text-primary">{application.referenceNumber}</strong>
-        </p>
-        <p className="text-[13px] leading-relaxed text-primary/60">
-          Your research ethics application has been received.
-        </p>
-
-        <section aria-label="Next steps" className="mb-7 mt-6 rounded-xl border border-primary/10 bg-background p-5 text-left">
-          <p className="mb-4 text-[10px] font-semibold uppercase tracking-widest text-primary/40">
-            What happens next
-          </p>
-          <ol className="space-y-4">
-            {nextSteps.map(([title, desc], i) => (
-              <li key={i} className="flex gap-3">
-                <figure
-                  aria-hidden
-                  className="flex size-5 shrink-0 items-center justify-center rounded-full bg-primary text-[10px] font-bold text-primary-foreground"
-                >
-                  {i + 1}
-                </figure>
-                <section>
-                  <p className="text-[12px] font-semibold text-primary">{title}</p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed text-primary/55">{desc}</p>
-                </section>
-              </li>
-            ))}
-          </ol>
-        </section>
-
-        <section className="flex justify-center gap-3">
-          <Button primary value="Go to Dashboard" onClick={() => onNavigate('/dashboard')} />
-          <Button value="View Applications" onClick={() => onNavigate('/applications')} />
-        </section>
-      </article>
-    </main>
   );
 }

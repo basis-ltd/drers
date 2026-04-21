@@ -10,10 +10,14 @@ import type {
   ApplicationStatus,
 } from "@/features/applications/api/types";
 import { faFile, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faPenToSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { Link } from "react-router-dom";
 import CustomPopover from "@/components/CustomPopover";
-import { TableActionButton, TableActionButtonTrigger } from "@/components/TableActionButton";
+import {
+  TableActionButton,
+  TableActionButtonTrigger,
+} from "@/components/TableActionButton";
 
 // ── Status display config ─────────────────────────────────────────────────────
 const STATUS_CONFIG: Record<
@@ -191,15 +195,30 @@ export function MyApplicationsPage() {
         header: "Actions",
         cell: ({ row }) => {
           return (
-            <CustomPopover trigger={<TableActionButtonTrigger />} className="flex gap-2">
+            <CustomPopover
+              trigger={<TableActionButtonTrigger />}
+              className="flex gap-2"
+            >
               <menu className="w-full flex flex-col gap-1">
-              <TableActionButton to={`/applications/${row.original.id}/edit`} label="Continue →" />
-              {row.original.status === "APPROVED" && (
-                <TableActionButton to={`/applications/${row.original.id}/certificate`} label="Certificate" />
-              )}
-              {row.original.status === "QUERY_RAISED" && (
-                <TableActionButton to={`/applications/${row.original.id}/respond`} label="Respond" />
-              )}
+                {["DRAFT"].includes(row.original.status) && (
+                  <TableActionButton
+                    to={`/applications/${row.original.id}/edit`}
+                    label="Continue"
+                    icon={faPenToSquare}
+                  />
+                )}
+                {["APPROVED"].includes(row.original.status) && (
+                  <TableActionButton
+                    to={`/applications/${row.original.id}/certificate`}
+                    label="Certificate"
+                  />
+                )}
+                {["QUERY_RAISED"].includes(row.original.status) && (
+                  <TableActionButton
+                    to={`/applications/${row.original.id}/respond`}
+                    label="Respond"
+                  />
+                )}
               </menu>
             </CustomPopover>
           );
@@ -250,7 +269,9 @@ export function MyApplicationsPage() {
             >
               {label}
               {key !== "ALL" && data && (
-                <span className={`ml-1.5 opacity-60 ${filter === key ? 'text-white!' : 'text-primary/50'}`}>
+                <span
+                  className={`ml-1.5 opacity-60 ${filter === key ? "text-white!" : "text-primary/50"}`}
+                >
                   (
                   {
                     data?.data?.filter((a: Application) => a?.status === key)
