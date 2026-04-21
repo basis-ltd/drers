@@ -26,6 +26,8 @@ export type ApplicationStatus =
   | 'WITHDRAWN'
   | 'CLOSED';
 
+export type ApplicationListScope = 'MY' | 'REVIEW';
+
 export type ReviewPathway = 'FULL' | 'EXPEDITED' | 'EXEMPT';
 
 export type StudyType = 'INTERVENTIONAL' | 'OBSERVATIONAL' | 'QUALITATIVE' | 'MIXED';
@@ -290,7 +292,9 @@ export interface UpdateApplicationDeclarationDto {
 }
 
 export interface ListApplicationsQuery {
+  scope?: ApplicationListScope;
   status?: ApplicationStatus;
+  statuses?: ApplicationStatus[];
   type?: ApplicationType;
   page?: number;
   limit?: number;

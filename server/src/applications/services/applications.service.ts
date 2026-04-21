@@ -8,9 +8,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { DataSource, EntityManager, Repository } from 'typeorm';
 import { Application } from '../entities/application.entity';
 import { ApplicationStatus } from '../enums/application-status.enum';
-import { ApplicationType } from '../enums/application-type.enum';
 import { CreateApplicationDto } from '../dto/create-application.dto';
-import { ListApplicationsDto } from '../dto/list-applications.dto';
+import {
+  ListApplicationsDto,
+  ListApplicationsScope,
+} from '../dto/list-applications.dto';
 import { UserTenantRolesService } from '../../user-tenant-roles/user-tenant-roles.service';
 import { Document } from '../../documents/entities/document.entity';
 import { DocumentType } from '../../documents/enums/document-type.enum';
@@ -22,6 +24,21 @@ const REQUIRED_DOCUMENT_TYPES: DocumentType[] = [
   DocumentType.PRINCIPAL_INVESTIGATOR_CV,
   DocumentType.ETHICS_TRAINING_CERT,
   DocumentType.NHRA_RESEARCHER_CERT,
+];
+
+const REVIEW_QUEUE_STATUSES: ApplicationStatus[] = [
+  ApplicationStatus.SUBMITTED,
+  ApplicationStatus.SCREENING,
+  ApplicationStatus.UNDER_REVIEW,
+  ApplicationStatus.MEETING_SCHEDULED,
+];
+
+const REVIEW_SCOPE_ROLES: RoleName[] = [
+  RoleName.REVIEWER,
+  RoleName.CHAIRPERSON,
+  RoleName.IRB_ADMIN,
+  RoleName.RNEC_ADMIN,
+  RoleName.SYS_ADMIN,
 ];
 
 @Injectable()
@@ -39,7 +56,8 @@ export class ApplicationsService {
     dto: CreateApplicationDto,
     userId: string,
   ): Promise<{ id: string; referenceNumber: string }> {
-    const primaryRole = await this.userTenantRolesService.findPrimaryForUser(userId);
+    const primaryRole =
+      await this.userTenantRolesService.findPrimaryForUser(userId);
     if (!primaryRole) {
       throw new UnprocessableEntityException(
         'No primary tenant assignment found for this user. Please contact an administrator.',
@@ -70,21 +88,50 @@ export class ApplicationsService {
   async findAll(
     userId: string,
     query: ListApplicationsDto,
-  ): Promise<{ data: Application[]; total: number; page: number; limit: number }> {
+  ): Promise<{
+    data: Application[];
+    total: number;
+    page: number;
+    limit: number;
+  }> {
     const page = query.page ?? 1;
     const limit = query.limit ?? 20;
+    const scope = query.scope ?? ListApplicationsScope.MY;
+    const statuses =
+      query.statuses && query.statuses.length > 0
+        ? query.statuses
+        : query.status
+          ? [query.status]
+          : undefined;
 
     const qb = this.applicationRepo
       .createQueryBuilder('app')
       .leftJoinAndSelect('app.details', 'details')
-      .where('app.applicantId = :userId', { userId })
       .orderBy('app.createdAt', 'DESC')
       .skip((page - 1) * limit)
       .take(limit);
 
-    if (query.status) {
-      qb.andWhere('app.status = :status', { status: query.status });
+    if (scope === ListApplicationsScope.REVIEW) {
+      const roles = await this.userTenantRolesService.findByUser(userId);
+      const hasReviewScopeRole = roles.some((utr) => {
+        const roleName = utr.role?.name;
+        return roleName ? REVIEW_SCOPE_ROLES.includes(roleName) : false;
+      });
+      if (!hasReviewScopeRole) {
+        throw new ForbiddenException('Access denied');
+      }
+
+      qb.where('app.applicantId != :userId', { userId });
+
+      const reviewStatuses = statuses ?? REVIEW_QUEUE_STATUSES;
+      qb.andWhere('app.status IN (:...statuses)', { statuses: reviewStatuses });
+    } else {
+      qb.where('app.applicantId = :userId', { userId });
+      if (statuses && statuses.length > 0) {
+        qb.andWhere('app.status IN (:...statuses)', { statuses });
+      }
     }
+
     if (query.type) {
       qb.andWhere('app.type = :type', { type: query.type });
     }
@@ -106,7 +153,8 @@ export class ApplicationsService {
     });
 
     if (!app) throw new NotFoundException('Application not found');
-    if (app.applicantId !== userId) throw new ForbiddenException('Access denied');
+    if (app.applicantId !== userId)
+      throw new ForbiddenException('Access denied');
 
     return app;
   }
@@ -156,7 +204,8 @@ export class ApplicationsService {
     });
 
     if (!app) throw new NotFoundException('Application not found');
-    if (app.applicantId !== userId) throw new ForbiddenException('Access denied');
+    if (app.applicantId !== userId)
+      throw new ForbiddenException('Access denied');
     if (app.status !== ApplicationStatus.DRAFT) {
       throw new ForbiddenException('Only draft applications can be submitted');
     }
@@ -194,7 +243,8 @@ export class ApplicationsService {
     const app = await this.applicationRepo.findOne({ where: { id } });
 
     if (!app) throw new NotFoundException('Application not found');
-    if (app.applicantId !== userId) throw new ForbiddenException('Access denied');
+    if (app.applicantId !== userId)
+      throw new ForbiddenException('Access denied');
 
     const withdrawableStatuses: ApplicationStatus[] = [
       ApplicationStatus.DRAFT,
@@ -231,7 +281,10 @@ export class ApplicationsService {
   /**
    * Same as assertOwnerAndDraft but allows QUERY_RAISED (used for document uploads).
    */
-  async assertOwnerAndEditable(id: string, userId: string): Promise<Application> {
+  async assertOwnerAndEditable(
+    id: string,
+    userId: string,
+  ): Promise<Application> {
     const app = await this.applicationRepo.findOne({ where: { id } });
     if (!app) throw new NotFoundException('Application not found');
     if (app.applicantId !== userId) {
@@ -256,7 +309,9 @@ export class ApplicationsService {
     const result = await manager
       .createQueryBuilder(Application, 'app')
       .select('app.reference_number', 'ref')
-      .where('app.reference_number LIKE :pattern', { pattern: `RNEC-${year}-%` })
+      .where('app.reference_number LIKE :pattern', {
+        pattern: `RNEC-${year}-%`,
+      })
       .orderBy('app.reference_number', 'DESC')
       .limit(1)
       .setLock('pessimistic_write')
@@ -272,7 +327,9 @@ export class ApplicationsService {
     return `RNEC-${year}-${String(sequence).padStart(5, '0')}`;
   }
 
-  private async validateSubmissionCompleteness(app: Application): Promise<void> {
+  private async validateSubmissionCompleteness(
+    app: Application,
+  ): Promise<void> {
     const missing: string[] = [];
 
     if (!app.details) missing.push('Application Details (Step 1)');
@@ -289,9 +346,13 @@ export class ApplicationsService {
       select: ['documentType'],
     });
     const presentTypes = new Set(documents.map((doc) => doc.documentType));
-    const missingRequiredDocs = REQUIRED_DOCUMENT_TYPES.filter((type) => !presentTypes.has(type));
+    const missingRequiredDocs = REQUIRED_DOCUMENT_TYPES.filter(
+      (type) => !presentTypes.has(type),
+    );
     if (missingRequiredDocs.length > 0) {
-      missing.push(`Required documents missing (Step 5): ${missingRequiredDocs.join(', ')}`);
+      missing.push(
+        `Required documents missing (Step 5): ${missingRequiredDocs.join(', ')}`,
+      );
     }
 
     if (missing.length > 0) {

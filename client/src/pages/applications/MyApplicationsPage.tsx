@@ -7,12 +7,12 @@ import { Table } from "@/components/Table";
 import { useListApplicationsQuery } from "@/features/applications/api/applicationsApi";
 import type {
   Application,
+  ApplicationListScope,
   ApplicationStatus,
 } from "@/features/applications/api/types";
-import { faFile, faPlus } from "@fortawesome/free-solid-svg-icons";
+import { faFile, faFilter, faPlus } from "@fortawesome/free-solid-svg-icons";
 import { faPenToSquare } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { Link } from "react-router-dom";
 import CustomPopover from "@/components/CustomPopover";
 import {
   TableActionButton,
@@ -26,31 +26,56 @@ import {
 import { useRoles } from "@/features/auth/hooks/useRoles";
 import { faEye, faGavel } from "@fortawesome/free-solid-svg-icons";
 
-type FilterKey = "ALL" | "DRAFT" | "UNDER_REVIEW" | "QUERY_RAISED" | "APPROVED";
+const ALL_APPLICATION_STATUSES = Object.keys(
+  STATUS_CONFIG,
+) as ApplicationStatus[];
+const REVIEW_DEFAULT_STATUSES = ALL_APPLICATION_STATUSES.filter((status) =>
+  isReviewEligible(status),
+);
 
-const FILTERS: { key: FilterKey; label: string }[] = [
-  { key: "ALL", label: "All Applications" },
-  { key: "DRAFT", label: "Drafts" },
-  { key: "UNDER_REVIEW", label: "Under Review" },
-  { key: "QUERY_RAISED", label: "Queries" },
-  { key: "APPROVED", label: "Approved" },
-];
+function getDefaultStatuses(scope: ApplicationListScope): ApplicationStatus[] {
+  return scope === "REVIEW" ? REVIEW_DEFAULT_STATUSES : ALL_APPLICATION_STATUSES;
+}
+
+function areStatusSetsEqual(a: ApplicationStatus[], b: ApplicationStatus[]) {
+  if (a.length !== b.length) return false;
+  const bSet = new Set(b);
+  return a.every((value) => bSet.has(value));
+}
 
 export function MyApplicationsPage() {
-  const [filter, setFilter] = useState<FilterKey>("ALL");
+  const [scope, setScope] = useState<ApplicationListScope | null>(null);
+  const [selectedStatuses, setSelectedStatuses] = useState<
+    ApplicationStatus[] | null
+  >(null);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
   const PAGE_SIZE = 10;
-  const { isReviewer, isChairperson, isAdmin } = useRoles();
+  const { roles, isReviewer, isChairperson, isAdmin, isLoading: rolesLoading } =
+    useRoles();
   const canReview = isReviewer || isChairperson || isAdmin;
+  const hasApplicantRole = roles.includes("APPLICANT");
+  const canToggleScope = canReview && hasApplicantRole;
+  const activeScope = scope ?? (canReview ? "REVIEW" : "MY");
+  const activeStatuses = selectedStatuses ?? getDefaultStatuses(activeScope);
+  const scopeLabel = activeScope === "REVIEW" ? "review queue" : "my applications";
+
+  const queryStatuses = useMemo(() => {
+    const defaults = getDefaultStatuses(activeScope);
+    if (activeStatuses.length === 0) return undefined;
+    if (areStatusSetsEqual(activeStatuses, defaults)) return undefined;
+    return activeStatuses;
+  }, [activeScope, activeStatuses]);
 
   const { data, isLoading } = useListApplicationsQuery({
-    status: filter === "ALL" ? undefined : (filter as ApplicationStatus),
+    scope: activeScope,
+    statuses: queryStatuses,
     page,
     limit: PAGE_SIZE,
-  });
+  }, { skip: rolesLoading });
 
   const applications = data?.data ?? [];
+  const pageLoading = isLoading || rolesLoading;
 
   const filtered = applications.filter((app) => {
     if (!search) return true;
@@ -171,6 +196,30 @@ export function MyApplicationsPage() {
     [canReview],
   );
 
+  const statusSelectionLabel =
+    activeStatuses.length === 0
+      ? "No statuses"
+      : activeStatuses.length === ALL_APPLICATION_STATUSES.length
+        ? "All statuses"
+        : `${activeStatuses.length} selected`;
+
+  const setScopeAndResetFilters = (nextScope: ApplicationListScope) => {
+    setScope(nextScope);
+    setSelectedStatuses(getDefaultStatuses(nextScope));
+    setPage(1);
+  };
+
+  const toggleStatus = (status: ApplicationStatus, checked: boolean) => {
+    setSelectedStatuses((prev) => {
+      const current = prev ?? getDefaultStatuses(activeScope);
+      if (checked) {
+        return current.includes(status) ? current : [...current, status];
+      }
+      return current.filter((value) => value !== status);
+    });
+    setPage(1);
+  };
+
   return (
     <main className="min-h-full px-4 py-8 md:px-8">
       {/* Header */}
@@ -191,41 +240,98 @@ export function MyApplicationsPage() {
 
       {/* Filters + Search */}
       <section className="mb-4 flex flex-wrap items-center gap-3">
-        <nav
-          aria-label="Status filters"
-          className="flex flex-wrap gap-1 rounded-md border border-primary/10 bg-white p-1"
-        >
-          {FILTERS.map(({ key, label }) => (
-            <Link
-              key={key}
-              onClick={(e) => {
-                e.preventDefault();
-                setFilter(key);
-                setPage(1);
-              }}
-              to="#"
-              className={`rounded-md px-3.5 py-1.5 text-[11px]! font-medium transition-colors ${
-                filter === key
+        {canToggleScope && (
+          <nav
+            aria-label="Application view scope"
+            className="flex flex-wrap gap-1 rounded-md border border-primary/10 bg-white p-1"
+          >
+            <button
+              type="button"
+              onClick={() => setScopeAndResetFilters("MY")}
+              className={`rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors ${
+                activeScope === "MY"
                   ? "bg-primary text-primary-foreground"
                   : "text-primary/50 hover:bg-primary/6 hover:text-primary"
               }`}
             >
-              {capitalizeString(label)}
-              {key !== "ALL" && data && (
-                <span
-                  className={`ml-1.5 opacity-60 ${filter === key ? "text-white!" : "text-primary/50"}`}
-                >
-                  (
-                  {
-                    data?.data?.filter((a: Application) => a?.status === key)
-                      ?.length
-                  }
-                  )
-                </span>
-              )}
-            </Link>
-          ))}
-        </nav>
+              My applications
+            </button>
+            <button
+              type="button"
+              onClick={() => setScopeAndResetFilters("REVIEW")}
+              className={`rounded-md px-3.5 py-1.5 text-[11px] font-medium transition-colors ${
+                activeScope === "REVIEW"
+                  ? "bg-primary text-primary-foreground"
+                  : "text-primary/50 hover:bg-primary/6 hover:text-primary"
+              }`}
+            >
+              Review queue
+            </button>
+          </nav>
+        )}
+
+        <CustomPopover
+          trigger={
+            <button
+              type="button"
+              className="inline-flex h-10 items-center gap-2 rounded-md border border-primary/15 bg-white px-3 text-[11px] font-medium text-primary/60 hover:bg-primary/6 hover:text-primary"
+            >
+              <FontAwesomeIcon icon={faFilter} />
+              <span>Status</span>
+              <span className="text-primary/45">({statusSelectionLabel})</span>
+            </button>
+          }
+          className="min-w-[250px]"
+        >
+          <section className="flex flex-col gap-2">
+            <menu className="flex max-h-[48vh] flex-col gap-1 overflow-y-auto">
+              {ALL_APPLICATION_STATUSES.map((status) => {
+                const checked = activeStatuses.includes(status);
+                const statusLabel = STATUS_CONFIG[status]?.label ?? status;
+                return (
+                  <label
+                    key={status}
+                    className="flex cursor-pointer items-center gap-2 rounded-sm px-1 py-1 hover:bg-primary/5"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      onChange={(event) =>
+                        toggleStatus(status, event.target.checked)
+                      }
+                      className="accent-primary"
+                    />
+                    <span className="text-[12px] text-secondary">
+                      {capitalizeString(statusLabel)}
+                    </span>
+                  </label>
+                );
+              })}
+            </menu>
+            <div className="mt-1 flex items-center justify-between gap-2 border-t border-primary/10 pt-2">
+              <button
+                type="button"
+                className="rounded-md border border-primary/10 px-2 py-1 text-[11px] text-secondary hover:bg-background"
+                onClick={() => {
+                  setSelectedStatuses([]);
+                  setPage(1);
+                }}
+              >
+                Clear all
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-primary/10 px-2 py-1 text-[11px] text-secondary hover:bg-background"
+                onClick={() => {
+                  setSelectedStatuses(ALL_APPLICATION_STATUSES);
+                  setPage(1);
+                }}
+              >
+                Select all
+              </button>
+            </div>
+          </section>
+        </CustomPopover>
 
         <section className="ml-auto">
           <Input
@@ -246,8 +352,8 @@ export function MyApplicationsPage() {
       <Table
         columns={columns}
         data={filtered}
-        isLoading={isLoading}
-        emptyState={<EmptyState hasSearch={!!search} />}
+        isLoading={pageLoading}
+        emptyState={<EmptyState hasSearch={!!search} scopeLabel={scopeLabel} />}
         pagination={{
           page,
           pageSize: PAGE_SIZE,
@@ -261,7 +367,13 @@ export function MyApplicationsPage() {
 
 // ── Empty state ───────────────────────────────────────────────────────────────
 
-function EmptyState({ hasSearch }: { hasSearch: boolean }) {
+function EmptyState({
+  hasSearch,
+  scopeLabel,
+}: {
+  hasSearch: boolean;
+  scopeLabel: string;
+}) {
   return (
     <section className="flex flex-col items-center justify-center py-20 text-center">
       <figure
@@ -273,7 +385,7 @@ function EmptyState({ hasSearch }: { hasSearch: boolean }) {
       <p className="text-[13px] font-medium text-primary/60">
         {hasSearch
           ? "No applications match your search."
-          : "No applications yet."}
+          : `No applications found in ${scopeLabel}.`}
       </p>
       {!hasSearch && (
         <Button

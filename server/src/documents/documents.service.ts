@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException, UnprocessableEntityException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  UnprocessableEntityException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -29,11 +33,20 @@ export class DocumentsService {
     apiKey: string;
     folder: string;
   }> {
-    await this.applicationsService.assertOwnerAndEditable(applicationId, userId);
+    await this.applicationsService.assertOwnerAndEditable(
+      applicationId,
+      userId,
+    );
 
-    const cloudName = this.configService.get<string>('CLOUDINARY_CLOUD_NAME', '');
+    const cloudName = this.configService.get<string>(
+      'CLOUDINARY_CLOUD_NAME',
+      '',
+    );
     const apiKey = this.configService.get<string>('CLOUDINARY_API_KEY', '');
-    const apiSecret = this.configService.get<string>('CLOUDINARY_API_SECRET', '');
+    const apiSecret = this.configService.get<string>(
+      'CLOUDINARY_API_SECRET',
+      '',
+    );
     const baseFolder = this.configService.get<string>(
       'CLOUDINARY_DOCUMENTS_FOLDER',
       'rnec/applications/documents',
@@ -63,7 +76,10 @@ export class DocumentsService {
     dto: RegisterDocumentDto,
     userId: string,
   ): Promise<Document> {
-    await this.applicationsService.assertOwnerAndEditable(applicationId, userId);
+    await this.applicationsService.assertOwnerAndEditable(
+      applicationId,
+      userId,
+    );
 
     await this.documentRepo.update(
       { applicationId, documentType: dto.documentType, isCurrentVersion: true },
@@ -107,7 +123,7 @@ export class DocumentsService {
   }
 
   async findAll(applicationId: string, userId: string): Promise<Document[]> {
-    await this.applicationsService.findOneOrFail(applicationId, userId);
+    await this.applicationsService.findOneForViewer(applicationId, userId);
 
     return this.documentRepo.find({
       where: { applicationId, isCurrentVersion: true },
@@ -128,8 +144,15 @@ export class DocumentsService {
     return this.ocrService.resetOcr(doc.id);
   }
 
-  async remove(applicationId: string, docId: string, userId: string): Promise<void> {
-    await this.applicationsService.assertOwnerAndEditable(applicationId, userId);
+  async remove(
+    applicationId: string,
+    docId: string,
+    userId: string,
+  ): Promise<void> {
+    await this.applicationsService.assertOwnerAndEditable(
+      applicationId,
+      userId,
+    );
 
     const doc = await this.documentRepo.findOne({
       where: { id: docId, applicationId },
