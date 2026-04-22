@@ -19,4 +19,7 @@ export default defineConfig({
   server: {
     port: 3000,
   },
+  preview: {
+    allowedHosts: ['drers.basis.rw', 'localhost', '127.0.0.1', 'drers.zipflex.rw'],
+  },
 })
