@@ -277,7 +277,7 @@ export function MyApplicationsPage() {
             <button
               type="button"
               aria-label="Filter applications by status"
-              className="inline-flex h-10 items-center gap-2 rounded-md border border-primary/15 bg-white px-3 text-[11px] font-medium text-primary/60 hover:bg-primary/6 hover:text-primary"
+              className="inline-flex cursor-pointer h-10 items-center gap-2 rounded-md border border-primary/15 bg-white px-3 text-[11px] font-medium text-primary/60 hover:bg-primary/6 hover:text-primary"
             >
               <FontAwesomeIcon icon={faFilter} />
               <span>Status</span>
@@ -304,7 +304,7 @@ export function MyApplicationsPage() {
                       }
                       className="accent-primary"
                     />
-                    <span className="text-[13px] text-secondary">
+                    <span className="text-[13px] text-primary">
                       {capitalizeString(statusLabel)}
                     </span>
                   </label>
@@ -312,26 +312,25 @@ export function MyApplicationsPage() {
               })}
             </ul>
             <div className="mt-1 flex items-center justify-between gap-2 border-t border-primary/10 pt-2">
-              <button
-                type="button"
-                className="rounded-md border border-primary/10 px-2.5 py-1.5 text-[12px] text-secondary hover:bg-background"
-                onClick={() => {
+              <Button
+                route="#"
+                onClick={(e) => {
+                  e.preventDefault();
                   setSelectedStatuses([]);
                   setPage(1);
                 }}
-              >
-                Clear all
-              </button>
-              <button
-                type="button"
-                className="rounded-md border border-primary/10 px-2.5 py-1.5 text-[12px] text-secondary hover:bg-background"
-                onClick={() => {
+                value="Clear all"
+              />
+              <Button
+                route="#"
+                onClick={(e) => {
+                  e.preventDefault();
                   setSelectedStatuses(ALL_APPLICATION_STATUSES);
                   setPage(1);
                 }}
               >
                 Select all
-              </button>
+              </Button>
             </div>
           </section>
         </CustomPopover>

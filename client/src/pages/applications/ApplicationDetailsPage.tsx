@@ -99,14 +99,14 @@ export function ApplicationDetailsPage() {
       <div className="flex flex-col gap-5">
         <ApplicationSummaryCard application={application} />
 
-        <ApplicationSectionGrid application={application} staggered />
-
         <section>
           <h2 className="heading-section mb-3">
             Documents & extraction
           </h2>
           <DocumentList documents={documents} compact />
         </section>
+
+        <ApplicationSectionGrid application={application} staggered />
       </div>
       </div>
     </main>

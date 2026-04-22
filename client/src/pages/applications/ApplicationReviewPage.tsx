@@ -163,13 +163,13 @@ export function ApplicationReviewPage() {
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_360px]">
         <section className="flex min-w-0 flex-col gap-5">
           <ApplicationSummaryCard application={application} />
-          <ApplicationSectionGrid application={application} />
           <section>
-            <h2 className="heading-section mb-3">
+          <h2 className="heading-section mb-3">
               Documents & extraction
             </h2>
             <DocumentList documents={documents} />
           </section>
+          <ApplicationSectionGrid application={application} />
         </section>
 
         <aside className="lg:sticky lg:top-6 lg:h-fit">
