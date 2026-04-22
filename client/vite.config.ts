@@ -22,4 +22,5 @@ export default defineConfig({
   preview: {
     allowedHosts: ['drers.basis.rw', 'localhost', '127.0.0.1', 'drers.zipflex.rw'],
   },
+  base: '/',
 })
