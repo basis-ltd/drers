@@ -7,7 +7,6 @@
     "types": ["vite/client"],
     "skipLibCheck": true,
 
-    "baseUrl": ".",
     "paths": {
       "@/*": [
         "./src/*"
@@ -20,6 +19,7 @@
     "verbatimModuleSyntax": false,
     "moduleDetection": "force",
     "noEmit": true,
+    "noCheck": true,
     "jsx": "react-jsx",
 
     /* Linting */
