@@ -60,6 +60,19 @@ export type VariantHighlight = {
   value: string | number;
 };
 
+export type VariantTrendSeries = {
+  label: string;
+  values: number[];
+  tone?: MetricTone;
+};
+
+export type VariantTrend = {
+  title: string;
+  rangeLabel: string;
+  periods: string[];
+  series: VariantTrendSeries[];
+};
+
 export type RoleVariant = {
   role: RoleName | "FALLBACK";
   roleLabel: string;
@@ -70,6 +83,11 @@ export type RoleVariant = {
   primaryAction: string;
   metrics: VariantMetric[];
   records: DashboardApplication[];
+  trend: VariantTrend;
+  tableTitle: string;
+  tableHint: string;
+  distributionTitle: string;
+  distributionActionLabel: string;
   highlightsTitle: string;
   highlights: VariantHighlight[];
   footerNote: string;
@@ -288,6 +306,115 @@ const ROLE_RECORD_IDS: Record<RoleName, string[]> = {
   SYS_ADMIN: ["app-001", "app-002", "app-003", "app-004", "app-005", "app-010", "app-011", "app-012"],
 };
 
+const TREND_PERIODS = [
+  "Wk 1",
+  "Wk 2",
+  "Wk 3",
+  "Wk 4",
+  "Wk 5",
+  "Wk 6",
+  "Wk 7",
+  "Wk 8",
+  "Wk 9",
+  "Wk 10",
+  "Wk 11",
+  "Wk 12",
+];
+
+const ROLE_TRENDS: Record<RoleName | "FALLBACK", VariantTrend> = {
+  APPLICANT: {
+    title: "Application Progress",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [1, 1, 2, 2, 2, 3, 3, 2, 3, 3, 4, 4], tone: "default" },
+      { label: "Under Review", values: [0, 1, 1, 1, 2, 2, 1, 2, 2, 2, 2, 3], tone: "indigo" },
+      { label: "Decisions", values: [0, 0, 0, 1, 1, 1, 1, 1, 2, 2, 2, 2], tone: "green" },
+    ],
+  },
+  REVIEWER: {
+    title: "Application Trend",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [3, 4, 5, 5, 7, 6, 7, 6, 7, 8, 8, 9], tone: "default" },
+      { label: "Under Review", values: [2, 3, 3, 4, 4, 5, 5, 4, 5, 5, 6, 6], tone: "indigo" },
+      { label: "Decisions", values: [0, 1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4], tone: "green" },
+    ],
+  },
+  IRB_ADMIN: {
+    title: "Board Throughput",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [4, 5, 5, 6, 7, 7, 8, 8, 9, 9, 10, 10], tone: "default" },
+      { label: "Under Review", values: [3, 3, 4, 4, 5, 5, 5, 6, 6, 6, 6, 7], tone: "indigo" },
+      { label: "Decisions", values: [1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5], tone: "green" },
+    ],
+  },
+  RNEC_ADMIN: {
+    title: "National Review Trend",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [5, 6, 7, 7, 8, 9, 8, 9, 10, 10, 11, 12], tone: "default" },
+      { label: "Under Review", values: [3, 4, 4, 5, 5, 6, 6, 5, 6, 6, 7, 7], tone: "indigo" },
+      { label: "Decisions", values: [1, 1, 2, 2, 3, 3, 3, 4, 4, 5, 5, 6], tone: "green" },
+    ],
+  },
+  FINANCE: {
+    title: "Payment Operations",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [2, 3, 3, 4, 4, 5, 4, 5, 5, 6, 6, 6], tone: "default" },
+      { label: "Under Review", values: [1, 1, 2, 2, 2, 2, 3, 3, 3, 3, 4, 4], tone: "indigo" },
+      { label: "Decisions", values: [0, 0, 1, 1, 1, 1, 2, 2, 2, 3, 3, 3], tone: "green" },
+    ],
+  },
+  CHAIRPERSON: {
+    title: "Committee Cadence",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [3, 4, 4, 5, 5, 6, 6, 6, 7, 7, 8, 8], tone: "default" },
+      { label: "Under Review", values: [2, 2, 3, 3, 4, 4, 4, 5, 5, 5, 5, 6], tone: "indigo" },
+      { label: "Decisions", values: [1, 1, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4], tone: "green" },
+    ],
+  },
+  SYS_ADMIN: {
+    title: "Platform Operations Trend",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9], tone: "default" },
+      { label: "Under Review", values: [2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5, 6], tone: "indigo" },
+      { label: "Decisions", values: [1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4, 4], tone: "green" },
+    ],
+  },
+  FALLBACK: {
+    title: "Application Trend",
+    rangeLabel: "Last 12 weeks",
+    periods: TREND_PERIODS,
+    series: [
+      { label: "Submitted", values: [2, 3, 4, 4, 5, 5, 6, 5, 6, 7, 7, 8], tone: "default" },
+      { label: "Under Review", values: [1, 2, 2, 3, 3, 4, 3, 3, 4, 4, 5, 5], tone: "indigo" },
+      { label: "Decisions", values: [0, 1, 1, 1, 2, 2, 2, 2, 3, 3, 3, 4], tone: "green" },
+    ],
+  },
+};
+
+const ROLE_TABLE_HINTS: Record<RoleName | "FALLBACK", string> = {
+  APPLICANT: "Your recent applications and latest status updates",
+  REVIEWER: "Assigned simulation records by review priority",
+  IRB_ADMIN: "Current IRB pipeline records in simulation mode",
+  RNEC_ADMIN: "National role-scoped simulation records",
+  FINANCE: "Payment and finance-sensitive simulation records",
+  CHAIRPERSON: "Agenda-relevant records in simulation mode",
+  SYS_ADMIN: "Cross-role simulation records for operational visibility",
+  FALLBACK: "Role-scoped simulation records",
+};
+
 function getRoleRecords(role: RoleName): DashboardApplication[] {
   const ids = ROLE_RECORD_IDS[role];
   return ids
@@ -328,6 +455,11 @@ function getVariant(role: RoleName): RoleVariant {
   const base = {
     records,
     role,
+    trend: ROLE_TRENDS[role],
+    tableTitle: "Recent Applications",
+    tableHint: ROLE_TABLE_HINTS[role],
+    distributionTitle: "Status Distribution",
+    distributionActionLabel: "View all statuses",
     footerNote: "Static role simulation only - no live analytics binding yet.",
   };
 
@@ -507,6 +639,11 @@ function buildFallbackVariant(): RoleVariant {
     secondaryAction: "View Summary",
     primaryAction: "Open Dashboard",
     records,
+    trend: ROLE_TRENDS.FALLBACK,
+    tableTitle: "Recent Applications",
+    tableHint: ROLE_TABLE_HINTS.FALLBACK,
+    distributionTitle: "Status Distribution",
+    distributionActionLabel: "View all statuses",
     metrics: [
       { label: "Tracked Applications", value: records.length, helper: "Static sample", icon: Activity },
       { label: "Under Review", value: records.filter((r) => r.status === "UNDER_REVIEW").length, helper: "Review workload", icon: FileSearch, tone: "indigo" },
