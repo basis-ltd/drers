@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Badge } from '@/components/ui/badge';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
+  faArrowsRotate,
   faArrowUpRightFromSquare,
   faCheck,
   faChevronDown,
@@ -15,11 +16,15 @@ import type {
   DocumentOcrStatus,
 } from '@/features/applications/api/types';
 import { DOCUMENT_TYPE_LABELS } from '@/features/documents/constants/documentTypeTitles';
+import { useTriggerManualOcrMutation } from '@/features/applications/api/applicationsApi';
+import { toast } from 'sonner';
 
 interface Props {
   document: ApplicationDocument;
   /** Compact mode renders a smaller summary without extracted-text panel. */
   compact?: boolean;
+  applicationId?: string;
+  canTriggerManualOcr?: boolean;
 }
 
 const OCR_STATUS: Record<
@@ -127,8 +132,15 @@ function issueLabel(key: string): string {
     .join(' ');
 }
 
-export function DocumentExtractionCard({ document, compact }: Props) {
+export function DocumentExtractionCard({
+  document,
+  compact,
+  applicationId,
+  canTriggerManualOcr,
+}: Props) {
   const [showText, setShowText] = useState(false);
+  const [triggerManualOcr, { isLoading: isTriggeringManualOcr }] =
+    useTriggerManualOcrMutation();
   const status = OCR_STATUS[document.ocrStatus];
   const screening = buildScreening(
     parseObject(document.aiScreeningResult),
@@ -144,6 +156,36 @@ export function DocumentExtractionCard({ document, compact }: Props) {
       : null;
   const expectedTitle =
     screening.expectedTitle ?? DOCUMENT_TYPE_LABELS[document.documentType];
+  const showManualTrigger =
+    Boolean(canTriggerManualOcr && applicationId) &&
+    document.ocrStatus !== 'PROCESSING';
+
+  const handleManualTrigger = async () => {
+    if (!applicationId) return;
+    try {
+      await triggerManualOcr({
+        id: applicationId,
+        docId: document.id,
+      }).unwrap();
+      toast.success('OCR run triggered.', {
+        description: `${document.originalFilename} has been queued for extraction.`,
+      });
+    } catch (error) {
+      const fallback = 'Failed to trigger OCR extraction.';
+      const data =
+        typeof error === 'object' && error !== null && 'data' in error
+          ? (error as { data?: unknown }).data
+          : undefined;
+      const message =
+        typeof data === 'object' &&
+        data !== null &&
+        'message' in data &&
+        typeof (data as { message?: unknown }).message === 'string'
+          ? (data as { message: string }).message
+          : fallback;
+      toast.error(message);
+    }
+  };
 
   return (
     <article className="rounded-md border border-primary/10 bg-white">
@@ -163,6 +205,17 @@ export function DocumentExtractionCard({ document, compact }: Props) {
           </div>
         </div>
         <div className="flex items-center gap-2">
+          {showManualTrigger && (
+            <button
+              type="button"
+              onClick={handleManualTrigger}
+              disabled={isTriggeringManualOcr}
+              className="inline-flex items-center gap-1 rounded-sm border border-primary/15 px-2 py-0.5 text-[10px] text-primary/65 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              <FontAwesomeIcon icon={faArrowsRotate} className="size-2.5" />
+              {isTriggeringManualOcr ? 'Running...' : 'Run OCR'}
+            </button>
+          )}
           <Badge
             variant="outline"
             className={`text-[10px] font-medium ${status.className} border-transparent`}

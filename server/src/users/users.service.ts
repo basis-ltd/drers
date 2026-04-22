@@ -51,7 +51,10 @@ export class UsersService {
   ): Promise<void> {
     await this.userRepository.update(
       { id: userId },
-      { emailVerificationTokenHash: tokenHash, emailVerificationExpiresAt: expiresAt },
+      {
+        emailVerificationTokenHash: tokenHash,
+        emailVerificationExpiresAt: expiresAt,
+      },
     );
   }
 
@@ -67,6 +70,9 @@ export class UsersService {
   }
 
   async updateLastLogin(userId: string): Promise<void> {
-    await this.userRepository.update({ id: userId }, { lastLoginAt: new Date() });
+    await this.userRepository.update(
+      { id: userId },
+      { lastLoginAt: new Date() },
+    );
   }
 }

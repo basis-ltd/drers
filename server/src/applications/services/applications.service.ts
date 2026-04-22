@@ -327,15 +327,13 @@ export class ApplicationsService {
       await this.collectPendingSubmissionValidations(app);
 
     if (pendingValidations.length > 0) {
-      throw new UnprocessableEntityException(
-        {
-          statusCode: 422,
-          error: 'Unprocessable Entity',
-          message:
-            'Application is incomplete. Please complete all required fields and documents before submitting.',
-          pendingValidations,
-        },
-      );
+      throw new UnprocessableEntityException({
+        statusCode: 422,
+        error: 'Unprocessable Entity',
+        message:
+          'Application is incomplete. Please complete all required fields and documents before submitting.',
+        pendingValidations,
+      });
     }
   }
 
@@ -373,8 +371,7 @@ export class ApplicationsService {
     if (!app.details) pendingValidations.push('Application Details (Step 1)');
     if (!app.team) pendingValidations.push('Research Team (Step 2)');
     if (!app.protocol) pendingValidations.push('Study Protocol (Step 3)');
-    if (!app.ethics)
-      pendingValidations.push('Ethical Considerations (Step 4)');
+    if (!app.ethics) pendingValidations.push('Ethical Considerations (Step 4)');
     if (!app.declaration) pendingValidations.push('Declaration (Step 6)');
     if (app.declaration && !app.declaration.agreed) {
       pendingValidations.push('Declaration must be agreed to (Step 6)');

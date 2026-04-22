@@ -1,4 +1,11 @@
-import { IsBoolean, IsDateString, IsEnum, IsOptional, IsString, MaxLength } from 'class-validator';
+import {
+  IsBoolean,
+  IsDateString,
+  IsEnum,
+  IsOptional,
+  IsString,
+  MaxLength,
+} from 'class-validator';
 import { ResearchArea } from '../enums/research-area.enum';
 import { StudyType } from '../enums/study-type.enum';
 import { ReviewPathway } from '../enums/review-pathway.enum';

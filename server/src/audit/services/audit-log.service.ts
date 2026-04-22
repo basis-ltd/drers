@@ -92,7 +92,9 @@ export class AuditLogService {
     );
   }
 
-  private buildWhere(filters: AuditLogQueryFilters): FindOptionsWhere<AuditLog> {
+  private buildWhere(
+    filters: AuditLogQueryFilters,
+  ): FindOptionsWhere<AuditLog> {
     const where: FindOptionsWhere<AuditLog> = {};
     if (filters.entityType) where.entityType = filters.entityType;
     if (filters.entityId) where.entityId = filters.entityId;

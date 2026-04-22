@@ -23,14 +23,16 @@ export interface RotateResult {
   keepSignedIn: boolean;
 }
 
-const sha256 = (input: string) => createHash('sha256').update(input).digest('hex');
+const sha256 = (input: string) =>
+  createHash('sha256').update(input).digest('hex');
 
 function parseDurationSeconds(value: string, fallback: number): number {
   const match = /^(\d+)\s*([smhd])?$/i.exec(value.trim());
   if (!match) return fallback;
   const n = Number(match[1]);
   const unit = (match[2] ?? 's').toLowerCase();
-  const mult = unit === 's' ? 1 : unit === 'm' ? 60 : unit === 'h' ? 3600 : 86400;
+  const mult =
+    unit === 's' ? 1 : unit === 'm' ? 60 : unit === 'h' ? 3600 : 86400;
   return n * mult;
 }
 
@@ -48,15 +50,22 @@ export class TokensService {
   }
 
   private refreshSecret() {
-    return this.config.get<string>('JWT_REFRESH_SECRET') ?? 'dev-refresh-secret';
+    return (
+      this.config.get<string>('JWT_REFRESH_SECRET') ?? 'dev-refresh-secret'
+    );
   }
 
   private accessTtlSeconds() {
-    return parseDurationSeconds(this.config.get<string>('JWT_ACCESS_TTL') ?? '15m', 900);
+    return parseDurationSeconds(
+      this.config.get<string>('JWT_ACCESS_TTL') ?? '15m',
+      900,
+    );
   }
 
   refreshTtlSeconds(keepSignedIn: boolean) {
-    const key = keepSignedIn ? 'JWT_REFRESH_TTL_EXTENDED' : 'JWT_REFRESH_TTL_DEFAULT';
+    const key = keepSignedIn
+      ? 'JWT_REFRESH_TTL_EXTENDED'
+      : 'JWT_REFRESH_TTL_DEFAULT';
     const fallback = keepSignedIn ? 60 * 60 * 24 * 30 : 60 * 60 * 24;
     return parseDurationSeconds(
       this.config.get<string>(key) ?? (keepSignedIn ? '30d' : '1d'),
@@ -122,7 +131,9 @@ export class TokensService {
         .createQueryBuilder()
         .update()
         .set({ revokedAt: new Date() })
-        .where('user_id = :userId AND revoked_at IS NULL', { userId: payload.sub })
+        .where('user_id = :userId AND revoked_at IS NULL', {
+          userId: payload.sub,
+        })
         .execute();
       throw new UnauthorizedException('Refresh token no longer valid');
     }
@@ -144,7 +155,9 @@ export class TokensService {
         .createQueryBuilder()
         .update()
         .set({ revokedAt: new Date() })
-        .where('token_hash = :h AND revoked_at IS NULL', { h: sha256(payload.jti) })
+        .where('token_hash = :h AND revoked_at IS NULL', {
+          h: sha256(payload.jti),
+        })
         .execute();
     } catch {
       // Idempotent logout

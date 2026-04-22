@@ -29,7 +29,9 @@ export class ApplicationTeamService {
 
     return this.dataSource.transaction(async (manager) => {
       // Upsert PI fields
-      let team = await manager.findOne(ApplicationTeam, { where: { applicationId } });
+      let team = await manager.findOne(ApplicationTeam, {
+        where: { applicationId },
+      });
 
       if (!team) {
         team = manager.create(ApplicationTeam, {
@@ -42,7 +44,8 @@ export class ApplicationTeamService {
       const { coInvestigators, studySites, ...piFields } = dto;
 
       Object.entries(piFields).forEach(([k, v]) => {
-        if (v !== undefined) (team as unknown as Record<string, unknown>)[k] = v;
+        if (v !== undefined)
+          (team as unknown as Record<string, unknown>)[k] = v;
       });
       team.lastUpdatedById = userId;
       await manager.save(ApplicationTeam, team);

@@ -28,7 +28,11 @@ const SENSITIVE_KEYS = new Set(
 function isSensitiveKey(key: string): boolean {
   const lower = key.toLowerCase();
   if (SENSITIVE_KEYS.has(lower)) return true;
-  return lower.includes('password') || lower.includes('token') || lower.includes('secret');
+  return (
+    lower.includes('password') ||
+    lower.includes('token') ||
+    lower.includes('secret')
+  );
 }
 
 export function redactForAudit(value: unknown, depth = 0): unknown {
@@ -36,7 +40,8 @@ export function redactForAudit(value: unknown, depth = 0): unknown {
   if (value === null || value === undefined) return value;
   if (typeof value !== 'object') return value;
   if (value instanceof Date) return value.toISOString();
-  if (Array.isArray(value)) return value.map((v) => redactForAudit(v, depth + 1));
+  if (Array.isArray(value))
+    return value.map((v) => redactForAudit(v, depth + 1));
   const out: Record<string, unknown> = {};
   for (const [k, v] of Object.entries(value as Record<string, unknown>)) {
     out[k] = isSensitiveKey(k) ? '[REDACTED]' : redactForAudit(v, depth + 1);
@@ -44,13 +49,16 @@ export function redactForAudit(value: unknown, depth = 0): unknown {
   return out;
 }
 
-export function serializeEntityForAudit(entity: unknown): Record<string, unknown> | null {
+export function serializeEntityForAudit(
+  entity: unknown,
+): Record<string, unknown> | null {
   if (entity === null || entity === undefined) return null;
   if (typeof entity !== 'object') return null;
 
   const plain = JSON.parse(
     JSON.stringify(entity, (_key, val) => {
-      if (typeof val === 'function' || typeof val === 'symbol') return undefined;
+      if (typeof val === 'function' || typeof val === 'symbol')
+        return undefined;
       return val;
     }),
   );

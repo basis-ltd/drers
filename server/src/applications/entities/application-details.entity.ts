@@ -25,7 +25,12 @@ export class ApplicationDetails extends BaseDomain {
   @Column({ name: 'study_type', type: 'enum', enum: StudyType, nullable: true })
   studyType: StudyType | null;
 
-  @Column({ name: 'pathway', type: 'enum', enum: ReviewPathway, nullable: true })
+  @Column({
+    name: 'pathway',
+    type: 'enum',
+    enum: ReviewPathway,
+    nullable: true,
+  })
   pathway: ReviewPathway | null;
 
   @Column({ name: 'start_date', type: 'date', nullable: true })

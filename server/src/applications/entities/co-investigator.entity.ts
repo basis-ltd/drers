@@ -31,7 +31,9 @@ export class CoInvestigator extends BaseDomain {
   @Column({ name: 'sort_order', type: 'integer', default: 0 })
   sortOrder: number;
 
-  @ManyToOne(() => Application, (a) => a.coInvestigators, { onDelete: 'CASCADE' })
+  @ManyToOne(() => Application, (a) => a.coInvestigators, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'application_id' })
   application: Application;
 }

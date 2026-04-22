@@ -19,10 +19,20 @@ export class ApplicationDeclaration extends BaseDomain {
   @Column({ name: 'signer_name', type: 'varchar', length: 255, nullable: true })
   signerName: string | null;
 
-  @Column({ name: 'signer_designation', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'signer_designation',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   signerDesignation: string | null;
 
-  @Column({ name: 'signature_cloudinary_url', type: 'varchar', length: 500, nullable: true })
+  @Column({
+    name: 'signature_cloudinary_url',
+    type: 'varchar',
+    length: 500,
+    nullable: true,
+  })
   signatureCloudinaryUrl: string | null;
 
   @Column({ name: 'signature_data', type: 'text', nullable: true })

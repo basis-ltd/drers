@@ -10,10 +10,20 @@ export class ApplicationTeam extends BaseDomain {
   @Column({ name: 'application_id', type: 'uuid', unique: true })
   applicationId: string;
 
-  @Column({ name: 'pi_department', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'pi_department',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   piDepartment: string | null;
 
-  @Column({ name: 'pi_institution', type: 'varchar', length: 255, nullable: true })
+  @Column({
+    name: 'pi_institution',
+    type: 'varchar',
+    length: 255,
+    nullable: true,
+  })
   piInstitution: string | null;
 
   @Column({ name: 'pi_phone', type: 'varchar', length: 50, nullable: true })

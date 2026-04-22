@@ -53,7 +53,11 @@ export class Review extends BaseDomain {
   @Column({ name: 'reviewer_comments', type: 'text', nullable: true })
   reviewerComments: string | null;
 
-  @Column({ name: 'reviewer_submitted_at', type: 'timestamptz', nullable: true })
+  @Column({
+    name: 'reviewer_submitted_at',
+    type: 'timestamptz',
+    nullable: true,
+  })
   reviewerSubmittedAt: Date | null;
 
   @Column({

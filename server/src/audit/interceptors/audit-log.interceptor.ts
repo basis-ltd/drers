@@ -10,7 +10,10 @@ import { randomUUID } from 'node:crypto';
 import { Observable } from 'rxjs';
 import { AuditAction } from '../../common/enums/audit-action.enum';
 import { AuditLayer } from '../../common/enums/audit-layer.enum';
-import { AuditContextService, AuditStore } from '../services/audit-context.service';
+import {
+  AuditContextService,
+  AuditStore,
+} from '../services/audit-context.service';
 import { AuditLogService } from '../services/audit-log.service';
 import { redactForAudit } from '../helpers/audit-serialize.helper';
 
@@ -69,7 +72,10 @@ export class AuditLogInterceptor implements NestInterceptor {
           subscriber.next(value);
         },
         error: (err) => {
-          finalize(res.statusCode && res.statusCode >= 400 ? res.statusCode : 500, false);
+          finalize(
+            res.statusCode && res.statusCode >= 400 ? res.statusCode : 500,
+            false,
+          );
           subscriber.error(err);
         },
         complete: () => {
@@ -87,10 +93,11 @@ export class AuditLogInterceptor implements NestInterceptor {
       (req.headers['x-correlation-id'] as string) ||
       randomUUID();
 
-    const path = (req.originalUrl || req.url || '').split('?')[0].slice(0, PATH_MAX);
+    const path = (req.originalUrl || req.url || '')
+      .split('?')[0]
+      .slice(0, PATH_MAX);
     const userAgent =
-      (req.headers['user-agent'] as string | undefined)?.slice(0, USER_AGENT_MAX) ??
-      null;
+      req.headers['user-agent']?.slice(0, USER_AGENT_MAX) ?? null;
     const ip = this.clientIp(req)?.slice(0, IP_MAX) ?? null;
     const rawBody = req.body && typeof req.body === 'object' ? req.body : null;
     const bodySnapshot = rawBody

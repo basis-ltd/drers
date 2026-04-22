@@ -17,6 +17,7 @@ import {
 import { ReviewTimeline } from '@/features/reviews/components/ReviewTimeline';
 import { useRoles } from '@/features/auth/hooks/useRoles';
 import { isReviewEligible } from '@/features/applications/utils/statusStyles';
+import { SkeletonLoader } from '@/components/Loader';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faChevronLeft } from '@fortawesome/free-solid-svg-icons';
 
@@ -35,7 +36,11 @@ export function ApplicationReviewPage() {
     isLoading: appLoading,
     error: appError,
   } = useGetApplicationQuery(id, { skip: !id });
-  const { data: documents = [] } = useListDocumentsQuery(id, { skip: !id });
+  const {
+    data: documents = [],
+    isLoading: documentsLoading,
+    isFetching: documentsFetching,
+  } = useListDocumentsQuery(id, { skip: !id });
   const {
     data: review,
     isLoading: reviewLoading,
@@ -138,6 +143,7 @@ export function ApplicationReviewPage() {
 
   const isAssignedReviewer = review.reviewerId === userId;
   const isChair = isChairperson || isAdmin;
+  const showDocumentsSkeleton = documentsLoading || documentsFetching;
 
   return (
     <main className="min-h-full px-4 py-8 md:px-8">
@@ -167,7 +173,18 @@ export function ApplicationReviewPage() {
           <h2 className="heading-section mb-3">
               Documents & extraction
             </h2>
-            <DocumentList documents={documents} />
+            {showDocumentsSkeleton ? (
+              <div className="space-y-3" role="status" aria-label="Loading documents">
+                <SkeletonLoader type="card" />
+                <SkeletonLoader type="card" />
+              </div>
+            ) : (
+              <DocumentList
+                documents={documents}
+                applicationId={application.id}
+                canTriggerManualOcr={canReview}
+              />
+            )}
           </section>
           <ApplicationSectionGrid application={application} />
         </section>

@@ -31,7 +31,8 @@ export class ApplicationProtocolService {
     }
 
     Object.entries(dto).forEach(([k, v]) => {
-      if (v !== undefined) (entity as unknown as Record<string, unknown>)[k] = v;
+      if (v !== undefined)
+        (entity as unknown as Record<string, unknown>)[k] = v;
     });
     entity.lastUpdatedById = userId;
 

@@ -43,7 +43,11 @@ export class ReviewsController {
     @Body() dto: SubmitReviewerFeedbackDto,
     @CurrentUser() user: JwtUser,
   ) {
-    return this.reviewsService.submitReviewerFeedback(applicationId, dto, user.sub);
+    return this.reviewsService.submitReviewerFeedback(
+      applicationId,
+      dto,
+      user.sub,
+    );
   }
 
   @Post('applications/:applicationId/review/chair-decision')
@@ -52,7 +56,11 @@ export class ReviewsController {
     @Body() dto: ChairDecisionDto,
     @CurrentUser() user: JwtUser,
   ) {
-    return this.reviewsService.recordChairDecision(applicationId, dto, user.sub);
+    return this.reviewsService.recordChairDecision(
+      applicationId,
+      dto,
+      user.sub,
+    );
   }
 
   @Get('reviews/reviewers')

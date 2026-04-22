@@ -1,4 +1,5 @@
 import {
+  ForbiddenException,
   Injectable,
   NotFoundException,
   UnprocessableEntityException,
@@ -12,6 +13,16 @@ import { RegisterDocumentDto } from './dto/register-document.dto';
 import { createHash } from 'crypto';
 import { DocumentOcrStatus } from './enums/document-ocr-status.enum';
 import { OcrService } from './ocr/ocr.service';
+import { UserTenantRolesService } from '../user-tenant-roles/user-tenant-roles.service';
+import { RoleName } from '../common/enums';
+
+const MANUAL_OCR_ROLES: RoleName[] = [
+  RoleName.REVIEWER,
+  RoleName.CHAIRPERSON,
+  RoleName.IRB_ADMIN,
+  RoleName.RNEC_ADMIN,
+  RoleName.SYS_ADMIN,
+];
 
 @Injectable()
 export class DocumentsService {
@@ -21,6 +32,7 @@ export class DocumentsService {
     private readonly applicationsService: ApplicationsService,
     private readonly configService: ConfigService,
     private readonly ocrService: OcrService,
+    private readonly userTenantRolesService: UserTenantRolesService,
   ) {}
 
   async getUploadSignature(
@@ -136,12 +148,28 @@ export class DocumentsService {
     docId: string,
     userId: string,
   ): Promise<Document> {
-    await this.applicationsService.findOneOrFail(applicationId, userId);
+    await this.applicationsService.findOneForViewer(applicationId, userId);
+    await this.assertCanTriggerManualOcr(userId);
     const doc = await this.documentRepo.findOne({
       where: { id: docId, applicationId },
     });
     if (!doc) throw new NotFoundException('Document not found');
-    return this.ocrService.resetOcr(doc.id);
+    const reset = await this.ocrService.resetOcr(doc.id);
+    void this.ocrService.processDocument(doc.id);
+    return reset;
+  }
+
+  private async assertCanTriggerManualOcr(userId: string): Promise<void> {
+    const userRoles = await this.userTenantRolesService.findByUser(userId);
+    const hasAllowedRole = userRoles.some((assignment) => {
+      const roleName = assignment.role?.name;
+      return roleName ? MANUAL_OCR_ROLES.includes(roleName) : false;
+    });
+    if (!hasAllowedRole) {
+      throw new ForbiddenException(
+        `Requires one of roles: ${MANUAL_OCR_ROLES.join(', ')}`,
+      );
+    }
   }
 
   async remove(

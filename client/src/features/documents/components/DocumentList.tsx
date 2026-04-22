@@ -4,9 +4,16 @@ import { DocumentExtractionCard } from './DocumentExtractionCard';
 interface Props {
   documents: ApplicationDocument[];
   compact?: boolean;
+  applicationId?: string;
+  canTriggerManualOcr?: boolean;
 }
 
-export function DocumentList({ documents, compact }: Props) {
+export function DocumentList({
+  documents,
+  compact,
+  applicationId,
+  canTriggerManualOcr,
+}: Props) {
   if (documents.length === 0) {
     return (
       <section className="rounded-lg border border-dashed border-primary/20 bg-white px-6 py-10 text-center">
@@ -21,7 +28,13 @@ export function DocumentList({ documents, compact }: Props) {
   return (
     <div className="flex flex-col gap-3">
       {documents.map((d) => (
-        <DocumentExtractionCard key={d.id} document={d} compact={compact} />
+        <DocumentExtractionCard
+          key={d.id}
+          document={d}
+          compact={compact}
+          applicationId={applicationId}
+          canTriggerManualOcr={canTriggerManualOcr}
+        />
       ))}
     </div>
   );

@@ -24,8 +24,8 @@ import { Public } from './decorators/public.decorator';
 
 function meta(req: Request) {
   return {
-    userAgent: (req.headers['user-agent'] as string | undefined) ?? null,
-    ipAddress: (req.ip ?? (req.socket?.remoteAddress as string | undefined)) ?? null,
+    userAgent: req.headers['user-agent'] ?? null,
+    ipAddress: req.ip ?? req.socket?.remoteAddress ?? null,
   };
 }
 

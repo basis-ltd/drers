@@ -88,6 +88,14 @@ export const applicationsApi = createApi({
       query: ({ id, docId }) => ({ url: `/applications/${id}/documents/${docId}`, method: 'DELETE' }),
       invalidatesTags: (_r, _e, { id }) => [{ type: 'ApplicationDocuments', id }],
     }),
+
+    triggerManualOcr: builder.mutation<ApplicationDocument, { id: string; docId: string }>({
+      query: ({ id, docId }) => ({
+        url: `/applications/${id}/documents/${docId}/ocr/manual-extract`,
+        method: 'POST',
+      }),
+      invalidatesTags: (_r, _e, { id }) => [{ type: 'ApplicationDocuments', id }],
+    }),
   }),
 });
 
@@ -105,4 +113,5 @@ export const {
   useUpdateDeclarationMutation,
   useListDocumentsQuery,
   useDeleteDocumentMutation,
+  useTriggerManualOcrMutation,
 } = applicationsApi;

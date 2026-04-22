@@ -27,7 +27,8 @@ const ASSIGNABLE_STATUSES: ApplicationStatus[] = [
 
 const CHAIR_DECISION_TO_STATUS: Record<ChairDecision, ApplicationStatus> = {
   [ChairDecision.APPROVED]: ApplicationStatus.APPROVED,
-  [ChairDecision.CONDITIONALLY_APPROVED]: ApplicationStatus.CONDITIONALLY_APPROVED,
+  [ChairDecision.CONDITIONALLY_APPROVED]:
+    ApplicationStatus.CONDITIONALLY_APPROVED,
   [ChairDecision.REVISIONS_REQUIRED]: ApplicationStatus.REVISIONS_REQUIRED,
   [ChairDecision.REJECTED]: ApplicationStatus.REJECTED,
   // RFDR/RTIC: placeholder outcomes — keep application in review for now.
@@ -130,10 +131,12 @@ export class ReviewsService {
       );
     }
     if (review.reviewerId !== userId) {
-      throw new ForbiddenException('Only the assigned reviewer can submit feedback');
+      throw new ForbiddenException(
+        'Only the assigned reviewer can submit feedback',
+      );
     }
 
-    review.reviewerDecision = dto.decision as ReviewerDecision;
+    review.reviewerDecision = dto.decision;
     review.reviewerComments = dto.comments;
     review.reviewerSubmittedAt = new Date();
     review.stage = ReviewStage.AWAITING_CHAIR;
@@ -148,7 +151,10 @@ export class ReviewsService {
     dto: ChairDecisionDto,
     userId: string,
   ): Promise<Review> {
-    await this.requireAnyRole(userId, [RoleName.CHAIRPERSON, RoleName.SYS_ADMIN]);
+    await this.requireAnyRole(userId, [
+      RoleName.CHAIRPERSON,
+      RoleName.SYS_ADMIN,
+    ]);
 
     const review = await this.getOrCreateReview(applicationId);
     if (review.stage !== ReviewStage.AWAITING_CHAIR) {
@@ -176,7 +182,9 @@ export class ReviewsService {
   }
 
   private async getOrCreateReview(applicationId: string): Promise<Review> {
-    const existing = await this.reviewRepo.findOne({ where: { applicationId } });
+    const existing = await this.reviewRepo.findOne({
+      where: { applicationId },
+    });
     if (existing) return existing;
     const created = this.reviewRepo.create({
       applicationId,
@@ -216,9 +224,7 @@ export class ReviewsService {
     }
   }
 
-  async listReviewers(
-    userId: string,
-  ): Promise<
+  async listReviewers(userId: string): Promise<
     Array<{
       id: string;
       email: string;

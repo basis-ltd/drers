@@ -27,7 +27,9 @@ export class RolesService {
   }
 
   findAllPermissions(): Promise<Permission[]> {
-    return this.permissionRepository.find({ order: { module: 'ASC', code: 'ASC' } });
+    return this.permissionRepository.find({
+      order: { module: 'ASC', code: 'ASC' },
+    });
   }
 
   findOnePermission(id: string): Promise<Permission | null> {

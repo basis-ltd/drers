@@ -20,7 +20,9 @@ export class ApplicationDeclarationService {
   ): Promise<ApplicationDeclaration> {
     await this.applicationsService.assertOwnerAndDraft(applicationId, userId);
 
-    let entity = await this.declarationRepo.findOne({ where: { applicationId } });
+    let entity = await this.declarationRepo.findOne({
+      where: { applicationId },
+    });
 
     if (!entity) {
       entity = this.declarationRepo.create({
@@ -31,7 +33,8 @@ export class ApplicationDeclarationService {
     }
 
     Object.entries(dto).forEach(([k, v]) => {
-      if (v !== undefined) (entity as unknown as Record<string, unknown>)[k] = v;
+      if (v !== undefined)
+        (entity as unknown as Record<string, unknown>)[k] = v;
     });
 
     if (dto.agreed) {

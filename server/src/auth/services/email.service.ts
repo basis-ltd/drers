@@ -15,10 +15,15 @@ export class EmailService {
   constructor(private readonly config: ConfigService) {
     const apiKey = this.config.get<string>('RESEND_API_KEY');
     this.client = apiKey ? new Resend(apiKey) : null;
-    this.from = this.config.get<string>('RESEND_FROM') ?? 'RNEC <noreply@rnec.rw>';
+    this.from =
+      this.config.get<string>('RESEND_FROM') ?? 'RNEC <noreply@rnec.rw>';
   }
 
-  private async send(to: string, subject: string, element: React.ReactElement): Promise<void> {
+  private async send(
+    to: string,
+    subject: string,
+    element: React.ReactElement,
+  ): Promise<void> {
     const html = await render(element);
     if (!this.client) {
       this.logger.warn(
@@ -27,7 +32,12 @@ export class EmailService {
       return;
     }
     try {
-      const { error } = await this.client.emails.send({ from: this.from, to, subject, html });
+      const { error } = await this.client.emails.send({
+        from: this.from,
+        to,
+        subject,
+        html,
+      });
       if (error) {
         this.logger.error(`Resend error for ${to}: ${JSON.stringify(error)}`);
       }
@@ -36,7 +46,11 @@ export class EmailService {
     }
   }
 
-  sendVerificationEmail(to: string, firstName: string, verifyUrl: string): Promise<void> {
+  sendVerificationEmail(
+    to: string,
+    firstName: string,
+    verifyUrl: string,
+  ): Promise<void> {
     return this.send(
       to,
       'Confirm your RNEC Portal email',
@@ -53,7 +67,11 @@ export class EmailService {
     return this.send(
       to,
       'Reset your RNEC Portal password',
-      React.createElement(ResetPassword, { firstName, resetUrl, expiresMinutes }),
+      React.createElement(ResetPassword, {
+        firstName,
+        resetUrl,
+        expiresMinutes,
+      }),
     );
   }
 }

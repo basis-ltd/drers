@@ -43,6 +43,7 @@ export const DOCUMENT_TYPE_TITLES: Record<DocumentType, DocumentTypeMeta> = {
   },
   [DocumentType.OTHER]: {
     title: 'Supporting Document',
-    description: 'Any additional supporting document relevant to the submission.',
+    description:
+      'Any additional supporting document relevant to the submission.',
   },
 };

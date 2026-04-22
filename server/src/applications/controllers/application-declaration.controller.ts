@@ -15,7 +15,9 @@ import { UpdateApplicationDeclarationDto } from '../dto/update-application-decla
 @UseGuards(JwtAuthGuard)
 @Controller('applications/:id/declaration')
 export class ApplicationDeclarationController {
-  constructor(private readonly declarationService: ApplicationDeclarationService) {}
+  constructor(
+    private readonly declarationService: ApplicationDeclarationService,
+  ) {}
 
   @Patch()
   upsert(

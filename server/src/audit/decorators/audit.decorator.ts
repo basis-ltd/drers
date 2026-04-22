@@ -17,7 +17,8 @@ export function Audit(options: AuditOptions): MethodDecorator {
   return (_target, _propertyKey, descriptor: PropertyDescriptor) => {
     const original = descriptor.value;
     descriptor.value = async function (this: unknown, ...args: unknown[]) {
-      const ctx = (this as { auditContext?: AuditContextService })?.auditContext;
+      const ctx = (this as { auditContext?: AuditContextService })
+        ?.auditContext;
       if (!ctx) return original.apply(this, args);
       const previous = ctx.get()?.currentOperation ?? null;
       ctx.setOperation(options.operation);

@@ -8,7 +8,10 @@ import {
 import { AuditAction } from '../../common/enums/audit-action.enum';
 import { AuditLayer } from '../../common/enums/audit-layer.enum';
 import { AuditLog } from '../../common/entities/audit-log.entity';
-import { isAuditable, getAuditEntityType } from '../decorators/auditable.decorator';
+import {
+  isAuditable,
+  getAuditEntityType,
+} from '../decorators/auditable.decorator';
 import { AuditContextService } from '../services/audit-context.service';
 import {
   buildCreateDiff,
@@ -23,7 +26,9 @@ import {
  */
 let contextService: AuditContextService | null = null;
 
-export function registerAuditContextService(service: AuditContextService): void {
+export function registerAuditContextService(
+  service: AuditContextService,
+): void {
   contextService = service;
 }
 
@@ -89,7 +94,8 @@ export class AuditLogSubscriber implements EntitySubscriberInterface<object> {
       oldValues,
       newValues,
       tenantId:
-        this.entityTenantId(event.entity) ?? this.entityTenantId(event.databaseEntity),
+        this.entityTenantId(event.entity) ??
+        this.entityTenantId(event.databaseEntity),
     });
   }
 

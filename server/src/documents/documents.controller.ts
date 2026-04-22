@@ -53,6 +53,15 @@ export class DocumentsController {
     return this.documentsService.retryOcr(id, docId, user.sub);
   }
 
+  @Post(':docId/ocr/manual-extract')
+  manualExtract(
+    @Param('id', ParseUUIDPipe) id: string,
+    @Param('docId', ParseUUIDPipe) docId: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.documentsService.retryOcr(id, docId, user.sub);
+  }
+
   @Delete(':docId')
   remove(
     @Param('id', ParseUUIDPipe) id: string,

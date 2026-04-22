@@ -36,7 +36,11 @@ export class ApplicationEthics extends BaseDomain {
   })
   consentWaiver: ConsentWaiver | null;
 
-  @Column({ name: 'consent_waiver_justification', type: 'text', nullable: true })
+  @Column({
+    name: 'consent_waiver_justification',
+    type: 'text',
+    nullable: true,
+  })
   consentWaiverJustification: string | null;
 
   @Column({ name: 'data_storage', type: 'text', nullable: true })
@@ -53,7 +57,11 @@ export class ApplicationEthics extends BaseDomain {
   })
   conflictOfInterest: ConflictOfInterest | null;
 
-  @Column({ name: 'conflict_of_interest_description', type: 'text', nullable: true })
+  @Column({
+    name: 'conflict_of_interest_description',
+    type: 'text',
+    nullable: true,
+  })
   conflictOfInterestDescription: string | null;
 
   @OneToOne(() => Application, (a) => a.ethics)
