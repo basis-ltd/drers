@@ -6,9 +6,14 @@ import { DocumentsService } from './documents.service';
 import { ApplicationsModule } from '../applications/applications.module';
 import { OcrService } from './ocr/ocr.service';
 import { OcrCronService } from './ocr/ocr-cron.service';
+import { UserTenantRolesModule } from '../user-tenant-roles/user-tenant-roles.module';
 
 @Module({
-  imports: [TypeOrmModule.forFeature([Document]), ApplicationsModule],
+  imports: [
+    TypeOrmModule.forFeature([Document]),
+    ApplicationsModule,
+    UserTenantRolesModule,
+  ],
   controllers: [DocumentsController],
   providers: [DocumentsService, OcrService, OcrCronService],
 })
