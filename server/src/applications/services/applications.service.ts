@@ -192,24 +192,7 @@ export class ApplicationsService {
   }
 
   async submit(id: string, userId: string): Promise<Application> {
-    const app = await this.applicationRepo.findOne({
-      where: { id },
-      relations: {
-        details: true,
-        team: true,
-        protocol: true,
-        ethics: true,
-        declaration: true,
-      },
-    });
-
-    if (!app) throw new NotFoundException('Application not found');
-    if (app.applicantId !== userId)
-      throw new ForbiddenException('Access denied');
-    if (app.status !== ApplicationStatus.DRAFT) {
-      throw new ForbiddenException('Only draft applications can be submitted');
-    }
-
+    const app = await this.findSubmissionDraftOrFail(id, userId);
     await this.validateSubmissionCompleteness(app);
 
     app.status = ApplicationStatus.SUBMITTED;
@@ -217,6 +200,16 @@ export class ApplicationsService {
     app.lastUpdatedById = userId;
 
     return this.applicationRepo.save(app);
+  }
+
+  async validateSubmission(
+    id: string,
+    userId: string,
+  ): Promise<{ pendingValidations: string[] }> {
+    const app = await this.findSubmissionDraftOrFail(id, userId);
+    const pendingValidations =
+      await this.collectPendingSubmissionValidations(app);
+    return { pendingValidations };
   }
 
   /**
@@ -330,15 +323,61 @@ export class ApplicationsService {
   private async validateSubmissionCompleteness(
     app: Application,
   ): Promise<void> {
-    const missing: string[] = [];
+    const pendingValidations =
+      await this.collectPendingSubmissionValidations(app);
 
-    if (!app.details) missing.push('Application Details (Step 1)');
-    if (!app.team) missing.push('Research Team (Step 2)');
-    if (!app.protocol) missing.push('Study Protocol (Step 3)');
-    if (!app.ethics) missing.push('Ethical Considerations (Step 4)');
-    if (!app.declaration) missing.push('Declaration (Step 6)');
+    if (pendingValidations.length > 0) {
+      throw new UnprocessableEntityException(
+        {
+          statusCode: 422,
+          error: 'Unprocessable Entity',
+          message:
+            'Application is incomplete. Please complete all required fields and documents before submitting.',
+          pendingValidations,
+        },
+      );
+    }
+  }
+
+  private async findSubmissionDraftOrFail(
+    id: string,
+    userId: string,
+  ): Promise<Application> {
+    const app = await this.applicationRepo.findOne({
+      where: { id },
+      relations: {
+        details: true,
+        team: true,
+        protocol: true,
+        ethics: true,
+        declaration: true,
+      },
+    });
+
+    if (!app) throw new NotFoundException('Application not found');
+    if (app.applicantId !== userId) {
+      throw new ForbiddenException('Access denied');
+    }
+    if (app.status !== ApplicationStatus.DRAFT) {
+      throw new ForbiddenException('Only draft applications can be submitted');
+    }
+
+    return app;
+  }
+
+  private async collectPendingSubmissionValidations(
+    app: Application,
+  ): Promise<string[]> {
+    const pendingValidations: string[] = [];
+
+    if (!app.details) pendingValidations.push('Application Details (Step 1)');
+    if (!app.team) pendingValidations.push('Research Team (Step 2)');
+    if (!app.protocol) pendingValidations.push('Study Protocol (Step 3)');
+    if (!app.ethics)
+      pendingValidations.push('Ethical Considerations (Step 4)');
+    if (!app.declaration) pendingValidations.push('Declaration (Step 6)');
     if (app.declaration && !app.declaration.agreed) {
-      missing.push('Declaration must be agreed to (Step 6)');
+      pendingValidations.push('Declaration must be agreed to (Step 6)');
     }
 
     const documents = await this.documentRepo.find({
@@ -350,15 +389,11 @@ export class ApplicationsService {
       (type) => !presentTypes.has(type),
     );
     if (missingRequiredDocs.length > 0) {
-      missing.push(
+      pendingValidations.push(
         `Required documents missing (Step 5): ${missingRequiredDocs.join(', ')}`,
       );
     }
 
-    if (missing.length > 0) {
-      throw new UnprocessableEntityException(
-        `Application is incomplete. Missing: ${missing.join(', ')}`,
-      );
-    }
+    return pendingValidations;
   }
 }

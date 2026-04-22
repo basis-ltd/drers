@@ -13,11 +13,14 @@ import {
   useCreateApplicationMutation,
   useGetApplicationQuery,
   useSubmitApplicationMutation,
+  useValidateSubmitApplicationMutation,
 } from '../../api/applicationsApi';
 import { STEPS } from '../../constants/formSteps';
 import Button from '@/components/Button';
 import CustomBreadcrumb from '@/components/CustomBreadcrumb';
 import { faChartLine, faFile } from '@fortawesome/free-solid-svg-icons';
+import { extractErrorMessage } from '@/features/auth/hooks/errorMessage';
+import { extractPendingValidations } from '../../api/submitValidationErrors';
 
 interface NewApplicationWizardProps {
   existingId?: string;
@@ -31,8 +34,10 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
   const [step, setStep] = useState(1);
   const [completed, setCompleted] = useState<Set<number>>(new Set());
   const [canSubmit, setCanSubmit] = useState(false);
+  const [pendingValidations, setPendingValidations] = useState<string[]>([]);
 
   const [createApplication, { isLoading: creating }] = useCreateApplicationMutation();
+  const [validateSubmitApplication] = useValidateSubmitApplicationMutation();
   const [submitApplication, { isLoading: submitting }] = useSubmitApplicationMutation();
 
   const { data: application, isLoading: loadingApp } = useGetApplicationQuery(
@@ -78,11 +83,32 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
 
   const handleSubmit = async () => {
     if (!applicationId) return;
+
     try {
+      const validation = await validateSubmitApplication(applicationId).unwrap();
+      if (validation.pendingValidations.length > 0) {
+        setPendingValidations(validation.pendingValidations);
+        toast.error('Submission blocked. Complete the listed requirements first.');
+        return;
+      }
+
+      setPendingValidations([]);
       await submitApplication(applicationId).unwrap();
       navigate(`/applications/${applicationId}/submitted`);
-    } catch {
-      toast.error('Submission failed. Please check all required fields and try again.');
+    } catch (error) {
+      const validations = extractPendingValidations(error);
+      if (validations.length > 0) {
+        setPendingValidations(validations);
+        toast.error('Submission blocked. Complete the listed requirements first.');
+        return;
+      }
+
+      toast.error(
+        extractErrorMessage(
+          error as never,
+          'Submission failed. Please check all required fields and try again.',
+        ),
+      );
     }
   };
 
@@ -158,6 +184,7 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
                   initialData={application?.declaration ?? null}
                   application={application ?? null}
                   onCanSubmitChange={setCanSubmit}
+                  pendingValidations={pendingValidations}
                 />
               )}
             </>

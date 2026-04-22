@@ -43,6 +43,14 @@ export class ApplicationsController {
     return this.applicationsService.submit(id, user.sub);
   }
 
+  @Get(':id/validate-submit')
+  validateSubmit(
+    @Param('id', ParseUUIDPipe) id: string,
+    @CurrentUser() user: JwtUser,
+  ) {
+    return this.applicationsService.validateSubmission(id, user.sub);
+  }
+
   @Post(':id/withdraw')
   withdraw(
     @Param('id', ParseUUIDPipe) id: string,

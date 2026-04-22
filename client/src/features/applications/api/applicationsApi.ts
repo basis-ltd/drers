@@ -12,6 +12,7 @@ import type {
   CreateApplicationResponse,
   ListApplicationsQuery,
   ListApplicationsResponse,
+  SubmissionValidationResponse,
   UpdateApplicationDeclarationDto,
   UpdateApplicationDetailsDto,
   UpdateApplicationEthicsDto,
@@ -42,6 +43,10 @@ export const applicationsApi = createApi({
     submitApplication: builder.mutation<Application, string>({
       query: (id) => ({ url: `/applications/${id}/submit`, method: 'POST' }),
       invalidatesTags: (_r, _e, id) => [{ type: 'Application', id }, 'ApplicationList'],
+    }),
+
+    validateSubmitApplication: builder.mutation<SubmissionValidationResponse, string>({
+      query: (id) => ({ url: `/applications/${id}/validate-submit`, method: 'GET' }),
     }),
 
     withdrawApplication: builder.mutation<Application, string>({
@@ -91,6 +96,7 @@ export const {
   useListApplicationsQuery,
   useGetApplicationQuery,
   useSubmitApplicationMutation,
+  useValidateSubmitApplicationMutation,
   useWithdrawApplicationMutation,
   useUpdateDetailsMutation,
   useUpdateTeamMutation,

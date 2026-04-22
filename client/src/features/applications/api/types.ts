@@ -311,3 +311,7 @@ export interface CreateApplicationResponse {
   id: string;
   referenceNumber: string;
 }
+
+export interface SubmissionValidationResponse {
+  pendingValidations: string[];
+}

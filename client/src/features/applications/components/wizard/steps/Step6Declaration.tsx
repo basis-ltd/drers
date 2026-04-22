@@ -25,6 +25,7 @@ interface Step6DeclarationProps {
   initialData: ApplicationDeclaration | null;
   application: Application | null;
   onCanSubmitChange: (can: boolean) => void;
+  pendingValidations: string[];
 }
 
 export function Step6Declaration({
@@ -32,6 +33,7 @@ export function Step6Declaration({
   initialData,
   application,
   onCanSubmitChange,
+  pendingValidations,
 }: Step6DeclarationProps) {
   const user = useSelector(selectAuthUser);
   const [updateDeclaration] = useUpdateDeclarationMutation();
@@ -121,6 +123,22 @@ export function Step6Declaration({
       </header>
 
       <section className="space-y-5">
+        {pendingValidations.length > 0 && (
+          <aside
+            role="alert"
+            className="rounded-lg border border-red-200 bg-red-50 px-4 py-3"
+          >
+            <p className="text-[12px] font-semibold text-red-700">
+              Please complete the following before submitting:
+            </p>
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-[11px] text-red-700">
+              {pendingValidations.map((validation) => (
+                <li key={validation}>{validation}</li>
+              ))}
+            </ul>
+          </aside>
+        )}
+
         {/* Summary accordion */}
         <article className="overflow-hidden rounded-lg border border-primary/10">
           <Button
