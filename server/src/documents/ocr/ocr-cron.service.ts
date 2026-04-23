@@ -15,6 +15,11 @@ export class OcrCronService implements OnModuleInit {
   private enabled = true;
   private maxAttempts = 3;
   private requeueAuthFailuresOnBoot = false;
+  private staleProcessingMinutes = 30;
+  private providerCheckIntervalMs = 60000;
+  private lastProviderCheckAt = 0;
+  private lastProviderCheckOk = true;
+  private lastProviderCheckMessage = '';
 
   constructor(
     @InjectRepository(Document)
@@ -26,16 +31,22 @@ export class OcrCronService implements OnModuleInit {
   onModuleInit(): void {
     this.enabled =
       this.configService.get<string>('OCR_CRON_ENABLED', 'false') === 'true';
-    this.maxAttempts = Number(
-      this.configService.get<string>('OCR_MAX_ATTEMPTS', '3'),
-    );
+    this.maxAttempts = this.readPositiveIntConfig('OCR_MAX_ATTEMPTS', 3);
     this.requeueAuthFailuresOnBoot =
       this.configService.get<string>(
         'OCR_REQUEUE_FAILED_DOWNLOAD_AUTH_ERRORS_ON_BOOT',
         'false',
       ) === 'true';
+    this.staleProcessingMinutes = this.readPositiveIntConfig(
+      'OCR_PROCESSING_STALE_MINUTES',
+      30,
+    );
+    this.providerCheckIntervalMs = this.readPositiveIntConfig(
+      'OCR_PROVIDER_CHECK_INTERVAL_MS',
+      60000,
+    );
     this.logger.log(
-      `OCR cron ${this.enabled ? 'enabled' : 'disabled'} (maxAttempts=${this.maxAttempts})`,
+      `OCR cron ${this.enabled ? 'enabled' : 'disabled'} (maxAttempts=${this.maxAttempts}, staleProcessingMinutes=${this.staleProcessingMinutes}, providerCheckIntervalMs=${this.providerCheckIntervalMs})`,
     );
     if (this.requeueAuthFailuresOnBoot) {
       void this.ocrService
@@ -62,6 +73,9 @@ export class OcrCronService implements OnModuleInit {
     }
     this.isRunning = true;
     try {
+      await this.requeueStaleProcessingDocuments();
+      const providerReady = await this.isProviderReachable();
+      if (!providerReady) return;
       const next = await this.pickNextDocument();
       if (!next) return;
       this.logger.log(
@@ -75,6 +89,72 @@ export class OcrCronService implements OnModuleInit {
     } finally {
       this.isRunning = false;
     }
+  }
+
+  private async isProviderReachable(): Promise<boolean> {
+    const now = Date.now();
+    if (
+      this.lastProviderCheckAt > 0 &&
+      now - this.lastProviderCheckAt < this.providerCheckIntervalMs
+    ) {
+      return this.lastProviderCheckOk;
+    }
+    this.lastProviderCheckAt = now;
+    const wasOk = this.lastProviderCheckOk;
+    const result = await this.ocrService.checkProviderReachable();
+    this.lastProviderCheckOk = result.ok;
+    this.lastProviderCheckMessage = result.message;
+    if (!result.ok) {
+      this.logger.warn(`Skipping OCR tick: ${result.message}`);
+    } else if (!wasOk && this.lastProviderCheckMessage) {
+      this.logger.log(`OCR provider recovered: ${result.message}`);
+    }
+    return result.ok;
+  }
+
+  private async requeueStaleProcessingDocuments(): Promise<void> {
+    if (this.staleProcessingMinutes <= 0) return;
+    const staleBefore = new Date(
+      Date.now() - this.staleProcessingMinutes * 60 * 1000,
+    );
+    const docs = await this.documentRepo
+      .createQueryBuilder('doc')
+      .where('doc.isCurrentVersion = :current', { current: true })
+      .andWhere('doc.ocrStatus = :processing', {
+        processing: DocumentOcrStatus.PROCESSING,
+      })
+      .andWhere('doc.ocrStartedAt IS NOT NULL')
+      .andWhere('doc.ocrStartedAt < :staleBefore', { staleBefore })
+      .limit(100)
+      .getMany();
+    if (docs.length === 0) return;
+
+    const now = new Date().toISOString();
+    for (const doc of docs) {
+      const ctx = (doc.ocrContext as Record<string, unknown> | null) ?? {};
+      doc.ocrStatus = DocumentOcrStatus.PENDING;
+      doc.ocrErrorMessage = null;
+      doc.ocrStartedAt = null;
+      doc.ocrCompletedAt = null;
+      doc.ocrContext = {
+        ...ctx,
+        lastRequeuedAt: now,
+        lastRequeueReason: 'stale_processing_timeout',
+      };
+    }
+    await this.documentRepo.save(docs);
+    this.logger.warn(
+      `Requeued ${docs.length} stale OCR document(s) stuck in PROCESSING`,
+    );
+  }
+
+  private readPositiveIntConfig(key: string, fallback: number): number {
+    const raw = this.configService.get<string>(key, String(fallback));
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return fallback;
+    }
+    return Math.floor(parsed);
   }
 
   private async pickNextDocument(): Promise<Document | null> {

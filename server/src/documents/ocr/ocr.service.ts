@@ -2,7 +2,7 @@ import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Brackets, Repository } from 'typeorm';
-import { Ollama } from 'ollama';
+import { ChatRequest, ChatResponse, Ollama } from 'ollama';
 import { v2 as cloudinary } from 'cloudinary';
 import sharp from 'sharp';
 import { Document } from '../entities/document.entity';
@@ -74,10 +74,17 @@ class OcrDownloadFailedError extends Error {
   }
 }
 
+class OcrProviderUnavailableError extends Error {
+  constructor(message: string) {
+    super(message);
+  }
+}
+
 @Injectable()
 export class OcrService {
   private readonly logger = new Logger(OcrService.name);
   private readonly ollama: Ollama;
+  private readonly ollamaHost: string;
   private readonly model: string;
   private readonly maxAttempts: number;
   private readonly pdfMaxPages: number;
@@ -90,17 +97,17 @@ export class OcrService {
   private readonly reviewChunkMaxChars = 12000;
   private readonly reviewExcerptMaxChars = 500;
   private readonly extractedTextMaxChars = 120000;
+  private readonly downloadTimeoutMs: number;
+  private readonly ollamaRequestTimeoutMs: number;
+  private readonly providerHealthcheckTimeoutMs: number;
 
   constructor(
     @InjectRepository(Document)
     private readonly documentRepo: Repository<Document>,
     private readonly configService: ConfigService,
   ) {
-    const host = this.configService.get<string>(
-      'OLLAMA_BASE_URL',
-      'http://localhost:11434',
-    );
-    this.ollama = new Ollama({ host });
+    this.ollamaHost = this.resolveOllamaHost();
+    this.ollama = new Ollama({ host: this.ollamaHost });
     this.model = this.configService.get<string>('OLLAMA_MODEL', 'qwen2.5vl:7b');
     this.maxAttempts = Number(
       this.configService.get<string>('OCR_MAX_ATTEMPTS', '3'),
@@ -113,6 +120,18 @@ export class OcrService {
     );
     this.imageMaxEdgePx = Number(
       this.configService.get<string>('OCR_IMAGE_MAX_EDGE_PX', '1280'),
+    );
+    this.downloadTimeoutMs = this.readPositiveIntConfig(
+      'OCR_DOWNLOAD_TIMEOUT_MS',
+      45000,
+    );
+    this.ollamaRequestTimeoutMs = this.readPositiveIntConfig(
+      'OCR_OLLAMA_REQUEST_TIMEOUT_MS',
+      120000,
+    );
+    this.providerHealthcheckTimeoutMs = this.readPositiveIntConfig(
+      'OCR_PROVIDER_HEALTHCHECK_TIMEOUT_MS',
+      5000,
     );
     this.signedDeliveryEnabled =
       this.configService.get<string>('OCR_SIGNED_DELIVERY_ENABLED', 'true') !==
@@ -147,9 +166,16 @@ export class OcrService {
         'Signed OCR delivery is enabled but Cloudinary config is incomplete. Falling back to stored URLs.',
       );
     }
+    this.logger.log(
+      `OCR configured (host=${this.describeHostForLog(this.ollamaHost)}, model=${this.model}, downloadTimeoutMs=${this.downloadTimeoutMs}, ollamaRequestTimeoutMs=${this.ollamaRequestTimeoutMs})`,
+    );
   }
 
   async processDocument(documentId: string): Promise<void> {
+    const runStartedAt = Date.now();
+    let downloadMs: number | null = null;
+    let rasterizeMs: number | null = null;
+    let ollamaMs: number | null = null;
     const doc = await this.documentRepo.findOne({ where: { id: documentId } });
     if (!doc) {
       this.logger.warn(`Document ${documentId} not found`);
@@ -176,17 +202,23 @@ export class OcrService {
     await this.documentRepo.save(doc);
 
     try {
+      const downloadStartedAt = Date.now();
       const { buffer, source } = await this.downloadDocumentBuffer(doc);
+      downloadMs = Date.now() - downloadStartedAt;
+      const rasterizeStartedAt = Date.now();
       const { images, pageCount } = await this.toImages(
         buffer,
         doc.mimeType,
         doc.format,
       );
+      rasterizeMs = Date.now() - rasterizeStartedAt;
 
+      const ollamaStartedAt = Date.now();
       const evaluation: OcrEvaluationPayload = await this.runOllama(
         images,
         doc.documentType,
       );
+      ollamaMs = Date.now() - ollamaStartedAt;
       const expectedTitle =
         DOCUMENT_TYPE_TITLES[doc.documentType]?.title ?? doc.documentType;
       const structuredScreening: StructuredScreeningPayload = {
@@ -223,16 +255,28 @@ export class OcrService {
         `OCR complete for ${doc.id} (source=${source}, match=${evaluation.documentTypeMatch}, missing=${evaluation.missingSections.length}, conf=${evaluation.confidence})`,
       );
     } catch (err) {
-      const message = this.getFailureMessage(err);
-      const atCap = attempt >= this.maxAttempts;
+      const providerUnavailable = this.isProviderUnavailableError(err);
+      const baseMessage = this.getFailureMessage(err);
+      const message = providerUnavailable
+        ? `Provider unavailable: ${baseMessage}`
+        : baseMessage;
+      const atCap = providerUnavailable ? false : attempt >= this.maxAttempts;
       const rawResponse = (err as { rawResponse?: string }).rawResponse;
-      if (rawResponse) {
-        doc.ocrContext = {
-          ...(doc.ocrContext as OcrContext),
-          lastRawResponse: rawResponse.slice(0, 4000),
-        };
+      const updatedContext: OcrContext = {
+        ...((doc.ocrContext as OcrContext) ?? {}),
+      };
+      if (providerUnavailable) {
+        updatedContext.attempts = ctx.attempts ?? 0;
+        updatedContext.lastProviderUnavailableAt = new Date().toISOString();
       }
+      if (rawResponse) {
+        updatedContext.lastRawResponse = rawResponse.slice(0, 4000);
+      }
+      doc.ocrContext = updatedContext;
       await this.markFailed(doc, message, atCap);
+      if (providerUnavailable) {
+        this.logger.warn(`OCR provider unavailable for ${doc.id}: ${message}`);
+      }
       if (err instanceof OcrDownloadFailedError && err.hasAuthError) {
         this.logger.warn(
           `Download authorization issue while OCRing ${doc.id}: ${message}`,
@@ -240,6 +284,10 @@ export class OcrService {
       }
       this.logger.error(
         `OCR failed for ${doc.id} (attempt ${attempt}/${this.maxAttempts}): ${message}`,
+      );
+    } finally {
+      this.logger.debug(
+        `OCR timings for ${documentId}: download=${downloadMs ?? -1}ms rasterize=${rasterizeMs ?? -1}ms ollama=${ollamaMs ?? -1}ms total=${Date.now() - runStartedAt}ms`,
       );
     }
   }
@@ -300,6 +348,31 @@ export class OcrService {
       `Requeued ${docs.length} OCR document(s) after auth failures`,
     );
     return docs.length;
+  }
+
+  async checkProviderReachable(): Promise<{ ok: boolean; message: string }> {
+    const healthUrl = `${this.ollamaHost}/api/tags`;
+    try {
+      const response = await this.fetchWithTimeout(
+        healthUrl,
+        this.providerHealthcheckTimeoutMs,
+      );
+      if (!response.ok) {
+        return {
+          ok: false,
+          message: `Ollama health check failed (${response.status} ${response.statusText || 'Unknown'}) at ${this.describeHostForLog(this.ollamaHost)}`,
+        };
+      }
+      return {
+        ok: true,
+        message: `Ollama reachable at ${this.describeHostForLog(this.ollamaHost)}`,
+      };
+    } catch (err) {
+      return {
+        ok: false,
+        message: `Ollama health check failed at ${this.describeHostForLog(this.ollamaHost)}: ${this.formatErrorDetails(err)}`,
+      };
+    }
   }
 
   private async markFailed(
@@ -429,10 +502,10 @@ export class OcrService {
   private async downloadAsBuffer(url: string, source: string): Promise<Buffer> {
     let res: Response;
     try {
-      res = await fetch(url);
+      res = await this.fetchWithTimeout(url, this.downloadTimeoutMs);
     } catch (err) {
       throw new Error(
-        `Network failure via ${source}: ${err instanceof Error ? err.message : String(err)}`,
+        `Network failure via ${source}: ${this.formatErrorDetails(err)}`,
       );
     }
     if (!res.ok) {
@@ -452,14 +525,14 @@ export class OcrService {
       }
       return `${source}: http ${err.status} ${err.statusText || 'Unknown'}`;
     }
-    return `${source}: ${err instanceof Error ? err.message : String(err)}`;
+    return `${source}: ${this.formatErrorDetails(err)}`;
   }
 
   private getFailureMessage(err: unknown): string {
     if (err instanceof OcrDownloadFailedError) {
       return err.message;
     }
-    return err instanceof Error ? err.message : String(err);
+    return this.formatErrorDetails(err);
   }
 
   private normalizeResourceType(
@@ -559,29 +632,32 @@ export class OcrService {
     pageTotal: number,
     judgeTitle: boolean,
   ): Promise<OcrPagePayload> {
-    const response = await this.ollama.chat({
-      model: this.model,
-      format: 'json',
-      stream: false,
-      options: {
-        temperature: 0,
-        num_ctx: 8192,
-        num_predict: 2048,
-      },
-      messages: [
-        { role: 'system', content: OCR_SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: buildUserPrompt(
-            documentType,
-            pageIndex,
-            pageTotal,
-            judgeTitle,
-          ),
-          images: [imageBase64],
+    const response = await this.chatWithOllama(
+      {
+        model: this.model,
+        format: 'json',
+        stream: false,
+        options: {
+          temperature: 0,
+          num_ctx: 8192,
+          num_predict: 2048,
         },
-      ],
-    });
+        messages: [
+          { role: 'system', content: OCR_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: buildUserPrompt(
+              documentType,
+              pageIndex,
+              pageTotal,
+              judgeTitle,
+            ),
+            images: [imageBase64],
+          },
+        ],
+      },
+      `page OCR ${pageIndex + 1}/${pageTotal}`,
+    );
     const content = response.message?.content ?? '';
     try {
       const parsed = parseOcrResponse(content, documentType);
@@ -608,28 +684,31 @@ export class OcrService {
     chunkIndex: number,
     chunkTotal: number,
   ): Promise<OcrChunkReviewPayload> {
-    const response = await this.ollama.chat({
-      model: this.model,
-      format: 'json',
-      stream: false,
-      options: {
-        temperature: 0,
-        num_ctx: 8192,
-        num_predict: 2048,
-      },
-      messages: [
-        { role: 'system', content: DOCUMENT_REVIEW_SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: buildDocumentReviewChunkPrompt(
-            documentType,
-            serializedPages,
-            chunkIndex,
-            chunkTotal,
-          ),
+    const response = await this.chatWithOllama(
+      {
+        model: this.model,
+        format: 'json',
+        stream: false,
+        options: {
+          temperature: 0,
+          num_ctx: 8192,
+          num_predict: 2048,
         },
-      ],
-    });
+        messages: [
+          { role: 'system', content: DOCUMENT_REVIEW_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: buildDocumentReviewChunkPrompt(
+              documentType,
+              serializedPages,
+              chunkIndex,
+              chunkTotal,
+            ),
+          },
+        ],
+      },
+      `document review chunk ${chunkIndex + 1}/${chunkTotal}`,
+    );
     const content = response.message?.content ?? '';
     try {
       return parseChunkReviewResponse(content, documentType);
@@ -649,26 +728,29 @@ export class OcrService {
     documentType: Document['documentType'],
     chunkReviews: OcrChunkReviewPayload[],
   ): Promise<OcrEvaluationPayload> {
-    const response = await this.ollama.chat({
-      model: this.model,
-      format: 'json',
-      stream: false,
-      options: {
-        temperature: 0,
-        num_ctx: 8192,
-        num_predict: 2048,
-      },
-      messages: [
-        { role: 'system', content: DOCUMENT_REVIEW_SYSTEM_PROMPT },
-        {
-          role: 'user',
-          content: buildDocumentReviewSynthesisPrompt(
-            documentType,
-            this.serializeChunkReviews(chunkReviews),
-          ),
+    const response = await this.chatWithOllama(
+      {
+        model: this.model,
+        format: 'json',
+        stream: false,
+        options: {
+          temperature: 0,
+          num_ctx: 8192,
+          num_predict: 2048,
         },
-      ],
-    });
+        messages: [
+          { role: 'system', content: DOCUMENT_REVIEW_SYSTEM_PROMPT },
+          {
+            role: 'user',
+            content: buildDocumentReviewSynthesisPrompt(
+              documentType,
+              this.serializeChunkReviews(chunkReviews),
+            ),
+          },
+        ],
+      },
+      'document review synthesis',
+    );
     const content = response.message?.content ?? '';
     try {
       return parseDocumentReviewResponse(content, documentType);
@@ -682,6 +764,181 @@ export class OcrService {
       (wrapped as Error & { rawResponse?: string }).rawResponse = content;
       throw wrapped;
     }
+  }
+
+  private async chatWithOllama(
+    payload: ChatRequest & { stream: false },
+    stage: string,
+  ): Promise<ChatResponse> {
+    try {
+      return await this.withTimeout(
+        () => this.ollama.chat(payload),
+        this.ollamaRequestTimeoutMs,
+        `Ollama ${stage}`,
+      );
+    } catch (err) {
+      throw new OcrProviderUnavailableError(
+        `Ollama request failed during ${stage} at ${this.describeHostForLog(this.ollamaHost)}: ${this.formatErrorDetails(err)}`,
+      );
+    }
+  }
+
+  private async fetchWithTimeout(
+    url: string,
+    timeoutMs: number,
+  ): Promise<Response> {
+    const signal =
+      timeoutMs > 0 &&
+      typeof AbortSignal !== 'undefined' &&
+      typeof AbortSignal.timeout === 'function'
+        ? AbortSignal.timeout(timeoutMs)
+        : undefined;
+    return fetch(url, signal ? { signal } : undefined);
+  }
+
+  private async withTimeout<T>(
+    factory: () => Promise<T>,
+    timeoutMs: number,
+    label: string,
+  ): Promise<T> {
+    if (timeoutMs <= 0) {
+      return factory();
+    }
+    let timeoutHandle: NodeJS.Timeout | undefined;
+    const timeoutPromise = new Promise<T>((_, reject) => {
+      timeoutHandle = setTimeout(() => {
+        reject(new Error(`${label} timed out after ${timeoutMs}ms`));
+      }, timeoutMs);
+    });
+    try {
+      return await Promise.race([factory(), timeoutPromise]);
+    } finally {
+      if (timeoutHandle) clearTimeout(timeoutHandle);
+    }
+  }
+
+  private resolveOllamaHost(): string {
+    const preferred = this.configService
+      .get<string>('OLLAMA_BASE_URL', '')
+      .trim();
+    const legacy = this.configService.get<string>('OLLAMA_HOST', '').trim();
+    const candidates = [
+      { key: 'OLLAMA_BASE_URL', value: preferred },
+      { key: 'OLLAMA_HOST', value: legacy },
+      { key: 'default', value: 'http://localhost:11434' },
+    ];
+    for (const candidate of candidates) {
+      if (!candidate.value) continue;
+      try {
+        return this.normalizeHost(candidate.value);
+      } catch (err) {
+        this.logger.warn(
+          `Invalid ${candidate.key} value (${candidate.value}). ${this.formatErrorDetails(err)}`,
+        );
+      }
+    }
+    return 'http://localhost:11434';
+  }
+
+  private normalizeHost(input: string): string {
+    const prefixed = input.includes('://') ? input : `http://${input}`;
+    const parsed = new URL(prefixed);
+    if (!['http:', 'https:'].includes(parsed.protocol)) {
+      throw new Error(`Unsupported protocol "${parsed.protocol}"`);
+    }
+    parsed.hash = '';
+    parsed.search = '';
+    return parsed.toString().replace(/\/$/, '');
+  }
+
+  private readPositiveIntConfig(key: string, fallback: number): number {
+    const raw = this.configService.get<string>(key, String(fallback));
+    const parsed = Number(raw);
+    if (!Number.isFinite(parsed) || parsed <= 0) {
+      return fallback;
+    }
+    return Math.floor(parsed);
+  }
+
+  private describeHostForLog(value: string): string {
+    try {
+      const parsed = new URL(value);
+      return `${parsed.protocol}//${parsed.host}`;
+    } catch {
+      return value;
+    }
+  }
+
+  private formatErrorDetails(err: unknown): string {
+    if (!(err instanceof Error)) {
+      return String(err);
+    }
+    const details: string[] = [];
+    const seen = new Set<unknown>();
+    const queue: unknown[] = [err];
+
+    while (queue.length > 0 && details.length < 5) {
+      const current = queue.shift();
+      if (!current || seen.has(current)) continue;
+      seen.add(current);
+
+      if (current instanceof AggregateError) {
+        details.push(current.message || current.name);
+        queue.push(...Array.from(current.errors as Iterable<unknown>));
+        continue;
+      }
+
+      if (current instanceof Error) {
+        const currentWithCode = current as Error & {
+          code?: string;
+          errno?: number;
+          syscall?: string;
+          cause?: unknown;
+        };
+        const segments = [current.message || current.name];
+        if (currentWithCode.code) segments.push(`code=${currentWithCode.code}`);
+        if (typeof currentWithCode.errno === 'number') {
+          segments.push(`errno=${currentWithCode.errno}`);
+        }
+        if (currentWithCode.syscall) {
+          segments.push(`syscall=${currentWithCode.syscall}`);
+        }
+        details.push(segments.join(' '));
+        if (currentWithCode.cause) queue.push(currentWithCode.cause);
+        continue;
+      }
+
+      if (typeof current === 'object') {
+        try {
+          details.push(JSON.stringify(current));
+        } catch {
+          details.push('[object]');
+        }
+      } else {
+        details.push(String(current));
+      }
+    }
+
+    return details.join(' | ');
+  }
+
+  private isProviderUnavailableError(err: unknown): boolean {
+    if (err instanceof OcrProviderUnavailableError) {
+      return true;
+    }
+    const normalized = this.formatErrorDetails(err).toLowerCase();
+    if (!normalized.includes('ollama')) {
+      return false;
+    }
+    return (
+      normalized.includes('fetch failed') ||
+      normalized.includes('network') ||
+      normalized.includes('timed out') ||
+      normalized.includes('econnrefused') ||
+      normalized.includes('enotfound') ||
+      normalized.includes('etimedout') ||
+      normalized.includes('econnreset')
+    );
   }
 
   private buildReviewChunks(pages: OcrPagePayload[]): string[] {
