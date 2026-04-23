@@ -4,7 +4,7 @@
 >
 > **Status:** Draft v1  
 > **Applies to:** Product design, frontend implementation, dashboard work, component design, UX writing, data visualization, accessibility, and QA  
-> **Primary brand color:** `#011627`  
+> **Primary brand color:** `#021b2f`  
 > **Base background:** `#FCFCFF`
 
 ---
@@ -77,10 +77,11 @@ Avoid visual overstatement, excessive gradients, loud shadows, shiny glassmorphi
 
 These values are the core of the system.
 
-- **Primary / Brand Ink:** `#011627`
+- **Primary / Brand Ink:** `#021b2f`
+- **Secondary Accent:** `#0d314b`
 - **Background / Canvas:** `#FCFCFF`
 
-These two colors should define the overall tone of the application.
+These colors should define the overall tone of the application.
 
 ## 3.2 Recommended supporting palette
 
@@ -101,18 +102,22 @@ The implementation should derive supporting tokens from the primary and backgrou
 
 ### Brand scale
 
-Derived from `#011627`:
+Derived from `#021b2f`:
 
-- `--brand-950: #011627`
-- `--brand-900: #02203A`
-- `--brand-800: #0A3150`
-- `--brand-700: #114364`
+- `--brand-950: #021b2f`
+- `--brand-900: #03253f`
+- `--brand-800: #0b3351`
+- `--brand-700: #134566`
 - `--brand-600: #1A5678`
 - `--brand-500: #2D6A8C`
 - `--brand-400: #4C87A8`
 - `--brand-300: #84B3CF`
 - `--brand-200: #BDD8E8`
 - `--brand-100: #E8F2F8`
+
+### Secondary accent
+
+- `--secondary-accent: #0d314b` — used for interactive highlights, hover states, and complementary brand treatments
 
 ### Semantic colors
 
@@ -382,7 +387,7 @@ It is not for excessive badges, noise, or marketing.
 
 Recommended sidebar rules:
 
-- background based on `#011627`
+- background based on `#021b2f`
 - slightly lighter inner states for hover/active
 - crisp but subtle divider lines
 - icons should be simple outline icons
@@ -1014,14 +1019,16 @@ Create and maintain centralized definitions for:
 
 ```css
 :root {
-  --color-brand-950: #011627;
-  --color-brand-900: #02203A;
-  --color-brand-800: #0A3150;
-  --color-brand-700: #114364;
+  --color-brand-950: #021b2f;
+  --color-brand-900: #03253f;
+  --color-brand-800: #0b3351;
+  --color-brand-700: #134566;
   --color-brand-600: #1A5678;
   --color-brand-500: #2D6A8C;
   --color-brand-200: #BDD8E8;
   --color-brand-100: #E8F2F8;
+
+  --color-secondary-accent: #0d314b;
 
   --color-bg-canvas: #FCFCFF;
   --color-bg-surface: #FFFFFF;
@@ -1116,7 +1123,7 @@ All future sidebar redesigns should follow these directives:
 
 ### Must include
 - strong brand presence
-- clean dark foundation using `#011627`
+- clean dark foundation using `#021b2f`
 - well-spaced nav
 - obvious active state
 - user identity block
@@ -1325,5 +1332,33 @@ The following decisions should be clarified before locking v2 of this document:
 ## 34. Versioning
 
 - v1: Initial extensive foundation based on current dashboard direction, requested academic minimalism, and approved palette direction.
+- v2: Primary color updated to `#021b2f`, secondary accent added as `#0d314b`. Example prompts section added.
 - Future revisions should be additive and documented clearly.
+
+---
+
+## 35. Example agent prompts
+
+Use these prompts as templates when asking a coding agent to build UI for this product. They encode the correct colors, tokens, and constraints.
+
+### Quick color reference
+
+```
+Background:  #FCFCFF
+Text:        #0F172A
+Primary:     #021b2f
+Secondary:   #0d314b
+Border:      #E6EAF0
+```
+
+### Example prompts
+
+1. "Build a hero section with a `#FCFCFF` background, Work Sans heading in `#021b2f`, and a `#021b2f` CTA button with 10px radius."
+2. "Create a pricing card using background `#FFFFFF`, border `#E6EAF0`, Work Sans body text, and 20px padding."
+3. "Design a navigation sidebar — `#021b2f` background, `#f3f7fb` links, `#0d314b` tint for active/hover state."
+4. "Build a feature grid with 3 columns, 12px gap, each card using white surface, soft border `#E6EAF0`, and 14px radius."
+5. "Create a page header with `#FCFCFF` background, `#021b2f` heading, `#475569` supporting description, and `#021b2f` primary action button."
+6. "Build a KPI card — white surface, `#E6EAF0` border, `#021b2f` value text, `#64748B` label, `#0d314b` trend highlight."
+7. "Design a status badge pill — soft tinted background matching the status semantic color, 6px radius, medium-contrast text."
+8. "Create a data table — `#FCFCFF` canvas, `#FFFFFF` row surface, `#E6EAF0` row dividers, `#0d314b` sorted-column indicator."
 
