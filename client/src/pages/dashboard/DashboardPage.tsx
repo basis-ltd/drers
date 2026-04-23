@@ -1,7 +1,8 @@
 import { useMeQuery } from "@/features/auth/api/authApi";
 import { Badge } from "@/components/ui/badge";
 import type { ApplicationStatus } from "@/features/applications/api/types";
-import { ArrowUpRight, CalendarClock, ClipboardList } from "lucide-react";
+import { CalendarClock, ClipboardList } from "lucide-react";
+import { Link } from "react-router-dom";
 import {
   getRoleVariant,
   getStatusCounts,
@@ -68,20 +69,13 @@ export function DashboardPage() {
               </div>
             </div>
             <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                className="inline-flex items-center gap-1.5 rounded-lg border border-primary/15 bg-white px-3 py-2 text-[12px] font-medium text-primary/70 transition-colors hover:bg-primary/6 hover:text-primary focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30"
-              >
-                {variant.secondaryAction}
-                <ArrowUpRight className="size-3.5" />
-              </button>
-              <button
-                type="button"
+              <Link
+                to={variant.primaryActionRoute}
                 className="inline-flex items-center gap-1.5 rounded-lg bg-primary px-3 py-2 text-[12px] font-medium text-primary-foreground transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
               >
                 {variant.primaryAction}
                 <ClipboardList className="size-3.5" />
-              </button>
+              </Link>
             </div>
           </section>
           <p className="mt-4 text-[12px] text-primary/55">

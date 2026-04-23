@@ -64,7 +64,9 @@ export class OcrCronService implements OnModuleInit {
     try {
       const next = await this.pickNextDocument();
       if (!next) return;
-      this.logger.log(`Processing document ${next.id} (${next.documentType})`);
+      this.logger.log(
+        `Processing document ${next.id} (${next.documentType}) for OCR screening`,
+      );
       await this.ocrService.processDocument(next.id);
     } catch (err) {
       this.logger.error(

@@ -15,5 +15,5 @@ export const AppDataSource = new DataSource({
   subscribers: ['src/**/*.subscriber.ts'],
   migrations: ['migrations/**/*.ts'],
   synchronize: true,
-  logging: true,
+  logging: process.env.TYPEORM_LOGGING === 'true',
 });

@@ -1,11 +1,12 @@
 import { NavLink } from "react-router-dom";
 import { useSelector } from "react-redux";
-import { Shield, ChevronLeft, ChevronRight, LogOut, User } from "lucide-react";
+import { Shield, ChevronLeft, ChevronRight, User } from "lucide-react";
 import { selectAuthUser } from "@/features/auth/model/selectors";
 import { useLogout } from "@/features/auth/hooks";
 import Button from "@/components/Button";
 import { faChartLine, faFileLines } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faArrowAltCircleRight } from "@fortawesome/free-regular-svg-icons";
 
 interface AppSidebarProps {
   collapsed: boolean;
@@ -104,9 +105,9 @@ export function AppSidebar({ collapsed, onToggle }: AppSidebarProps) {
         <Button
           onClick={logout}
           value={collapsed ? null : "Log out"}
-          className="text-[12px] w-full"
+          icon={faArrowAltCircleRight}
+          className="w-full"
         >
-          <LogOut className="size-3 shrink-0" aria-hidden />
           {!collapsed && `Log out`}
         </Button>
       </footer>
@@ -215,10 +216,10 @@ export function MobileSidebarContent() {
 
         <Button
           onClick={logout}
-          className="w-full gap-3 rounded-xl border-none bg-transparent px-3 py-2.5 text-[10px] font-normal text-white/80 transition-colors duration-150 hover:bg-white/12 hover:text-white"
+          icon={faArrowAltCircleRight}
+          className="w-full"
         >
-          <LogOut className="size-4 shrink-0" aria-hidden />
-          <span>Log out</span>
+          Log out
         </Button>
       </footer>
     </aside>

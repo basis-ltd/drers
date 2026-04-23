@@ -81,6 +81,7 @@ export type RoleVariant = {
   subtitle: string;
   secondaryAction: string;
   primaryAction: string;
+  primaryActionRoute: string;
   metrics: VariantMetric[];
   records: DashboardApplication[];
   trend: VariantTrend;
@@ -415,6 +416,17 @@ const ROLE_TABLE_HINTS: Record<RoleName | "FALLBACK", string> = {
   FALLBACK: "Role-scoped simulation records",
 };
 
+const ROLE_PRIMARY_ACTION_ROUTE: Record<RoleName | "FALLBACK", string> = {
+  APPLICANT: "/applications/new",
+  REVIEWER: "/applications",
+  IRB_ADMIN: "/applications",
+  RNEC_ADMIN: "/applications",
+  FINANCE: "/applications",
+  CHAIRPERSON: "/applications",
+  SYS_ADMIN: "/dashboard",
+  FALLBACK: "/dashboard",
+};
+
 function getRoleRecords(role: RoleName): DashboardApplication[] {
   const ids = ROLE_RECORD_IDS[role];
   return ids
@@ -455,6 +467,7 @@ function getVariant(role: RoleName): RoleVariant {
   const base = {
     records,
     role,
+    primaryActionRoute: ROLE_PRIMARY_ACTION_ROUTE[role],
     trend: ROLE_TRENDS[role],
     tableTitle: "Recent Applications",
     tableHint: ROLE_TABLE_HINTS[role],
@@ -638,6 +651,7 @@ function buildFallbackVariant(): RoleVariant {
     subtitle: "Role could not be resolved. Showing default static simulation.",
     secondaryAction: "View Summary",
     primaryAction: "Open Dashboard",
+    primaryActionRoute: ROLE_PRIMARY_ACTION_ROUTE.FALLBACK,
     records,
     trend: ROLE_TRENDS.FALLBACK,
     tableTitle: "Recent Applications",

@@ -58,8 +58,7 @@ export function NewApplicationWizard({ existingId }: NewApplicationWizardProps) 
       .catch(() => {
         toast.error('Failed to create application draft. Please try again.');
       });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [applicationId, createApplication, existingId, navigate]);
 
   const goTo = (n: number) => {
     setStep(n);

@@ -4,20 +4,54 @@ import {
   DocumentTypeMeta,
 } from '../constants/document-type-titles';
 
-export interface OcrEvaluationPayload {
+export interface OcrPagePayload {
   extractedText: string;
   summary: string;
+  detectedTitle: string;
   titleMatch: boolean;
   titleMatchConfidence: number;
   issues: string[];
+  detectedSignals: string[];
+  reviewNotes: string;
   confidence: number;
 }
 
-export const OCR_SYSTEM_PROMPT = `You are an OCR and document screening assistant for a research ethics committee.
-You receive page images of a single uploaded document and must:
-1. Transcribe legible text (compact; replace line breaks with spaces; do not translate).
-2. Judge whether the document matches the expected slot title provided by the user.
-3. Flag concrete issues (illegible regions, wrong document type, missing signatures, expired dates, missing required sections).
+export interface OcrChunkReviewPayload {
+  summary: string;
+  detectedTitle: string;
+  titleMatch: boolean;
+  titleMatchConfidence: number;
+  issues: string[];
+  requiredSectionsFound: string[];
+  optionalSectionsFound: string[];
+  detectedSignals: string[];
+  reviewNotes: string;
+  confidence: number;
+}
+
+export interface OcrEvaluationPayload {
+  extractedText: string;
+  summary: string;
+  detectedTitle: string;
+  documentTypeMatch: boolean;
+  titleMatch: boolean;
+  titleMatchConfidence: number;
+  issues: string[];
+  requiredSectionsFound: string[];
+  missingSections: string[];
+  optionalSectionsFound: string[];
+  detectedSignals: string[];
+  reviewNotes: string;
+  confidence: number;
+}
+
+export const OCR_SYSTEM_PROMPT = `You are an OCR and page-screening assistant for a research ethics committee.
+You receive one page image from a single uploaded document.
+
+Your job on each page is to:
+1. Transcribe the legible text accurately and compactly.
+2. Describe what this page contributes to the document (headings, identifiers, dates, signatures, or key content).
+3. Capture only concrete visible issues.
 
 OUTPUT RULES — follow EXACTLY:
 - Return a SINGLE JSON object and NOTHING else.
@@ -25,19 +59,35 @@ OUTPUT RULES — follow EXACTLY:
 - Start the response with "{" and end with "}".
 - All strings must be valid JSON: escape double quotes as \\" and newlines as \\n.
 - Do not include trailing commas.
-- Keep "extractedText" under 4000 characters; summarize or truncate if longer.
-- Keep "summary" under 400 characters.
-- "issues" must be an array of short snake_case tags (no sentences).`;
+- "issues" must be an array of short snake_case tags.
+- "detectedSignals" must use only the exact labels provided by the user.
+- Do not invent content not visible on the page.`;
+
+export const DOCUMENT_REVIEW_SYSTEM_PROMPT = `You are a document screening assistant for a research ethics committee.
+You receive OCR-derived page digests or chunk findings for one uploaded document.
+
+Your job is to:
+1. Decide whether the document matches the expected document slot.
+2. Identify which required and optional sections are actually evidenced.
+3. Summarize the document comprehensively, including identifiers, dates, signatures, missing sections, and anomalies when present.
+
+OUTPUT RULES — follow EXACTLY:
+- Return a SINGLE JSON object and NOTHING else.
+- No markdown, no code fences, no commentary before or after.
+- Start the response with "{" and end with "}".
+- All strings must be valid JSON.
+- Do not include trailing commas.
+- Use only the exact labels supplied for requiredSectionsFound, optionalSectionsFound, missingSections, and detectedSignals.
+- "issues" must be an array of short snake_case tags.
+- Never infer a section as present unless the evidence strongly supports it.`;
 
 export function buildUserPrompt(
   documentType: DocumentType,
   pageIndex?: number,
   pageTotal?: number,
+  judgeTitle = true,
 ): string {
-  const meta: DocumentTypeMeta =
-    DOCUMENT_TYPE_TITLES[documentType] ??
-    DOCUMENT_TYPE_TITLES[DocumentType.OTHER];
-
+  const meta = getDocumentMeta(documentType);
   const pageLine =
     pageIndex !== undefined && pageTotal !== undefined
       ? `\nYou are looking at page ${pageIndex + 1} of ${pageTotal} from a single document.`
@@ -45,22 +95,265 @@ export function buildUserPrompt(
 
   return `Expected document slot:
 - Title: "${meta.title}"
-- Description: ${meta.description}${pageLine}
+- Description: ${meta.description}
+- OCR purpose: ${meta.ocrPurpose}${pageLine}
+
+Page-level guidance:
+- Focus on faithful OCR transcription and visible evidence on this page only.
+- Mention headings, titles, dates, signatures, tables, or identifiers in the summary when visible.
+- ${judgeTitle ? 'Assess whether this page supports the expected document type.' : 'This page may be a later continuation page; only mark a title/type match if the page itself clearly supports it.'}
+
+Allowed signal labels:
+${renderBulletList(meta.requiredSignals)}
+
+Document-specific instructions:
+${meta.documentSpecificInstructions}
 
 Return JSON with this exact shape (no extra keys):
 {
-  "extractedText": "<OCR text for this page; compact, newlines escaped as \\n>",
-  "summary": "<1-3 sentence description of what this page/document is>",
-  "titleMatch": <true|false — does the page's visible content match the expected slot title?>,
+  "extractedText": "<OCR text for this page; compact, with escaped newlines>",
+  "summary": "<1-3 sentences about what this page contains and why it matters>",
+  "detectedTitle": "<best visible page or document title on this page, or empty string>",
+  "titleMatch": <true|false>,
   "titleMatchConfidence": <number between 0 and 1>,
-  "issues": [<short snake_case tags, e.g. "illegible_signature", "wrong_document_type", "expired_certificate">],
+  "issues": [<short snake_case tags>],
+  "detectedSignals": [<exact labels from the allowed signal labels list>],
+  "reviewNotes": "<1-3 short sentences about dates, signatures, missing evidence, or anomalies visible on this page>",
   "confidence": <overall OCR confidence, number between 0 and 1>
 }
 
-Be concise in "summary" and "issues". Do not invent content not visible in the image.`;
+Keep the OCR text reasonably complete for the page, and keep the summary and reviewNotes concise.`;
 }
 
-export function parseOcrResponse(raw: string): OcrEvaluationPayload {
+export function buildDocumentReviewChunkPrompt(
+  documentType: DocumentType,
+  serializedPages: string,
+  chunkIndex: number,
+  chunkTotal: number,
+): string {
+  const meta = getDocumentMeta(documentType);
+
+  return `Expected document slot:
+- Title: "${meta.title}"
+- Description: ${meta.description}
+- OCR purpose: ${meta.ocrPurpose}
+
+This is chunk ${chunkIndex + 1} of ${chunkTotal} from one document-level screening run.
+Only report sections and signals clearly evidenced in this chunk. Do not guess about unseen pages.
+
+Required sections:
+${renderBulletList(meta.requiredSections)}
+
+Optional sections:
+${renderBulletList(meta.optionalSections)}
+
+Allowed detected signal labels:
+${renderBulletList(meta.requiredSignals)}
+
+Document-specific instructions:
+${meta.documentSpecificInstructions}
+
+Chunk evidence:
+${serializedPages}
+
+Return JSON with this exact shape (no extra keys):
+{
+  "summary": "<concise summary of what this chunk shows about the document>",
+  "detectedTitle": "<best supported document title seen in this chunk, or empty string>",
+  "titleMatch": <true|false>,
+  "titleMatchConfidence": <number between 0 and 1>,
+  "issues": [<short snake_case tags>],
+  "requiredSectionsFound": [<exact labels from the required sections list>],
+  "optionalSectionsFound": [<exact labels from the optional sections list>],
+  "detectedSignals": [<exact labels from the allowed detected signal labels list>],
+  "reviewNotes": "<short notes about identifiers, dates, signatures, missing evidence, or anomalies in this chunk>",
+  "confidence": <number between 0 and 1>
+}`;
+}
+
+export function buildDocumentReviewSynthesisPrompt(
+  documentType: DocumentType,
+  chunkReviews: string,
+): string {
+  const meta = getDocumentMeta(documentType);
+
+  return `Expected document slot:
+- Title: "${meta.title}"
+- Description: ${meta.description}
+- OCR purpose: ${meta.ocrPurpose}
+
+You are synthesizing chunk-level findings into the final document screening result.
+
+Required sections:
+${renderBulletList(meta.requiredSections)}
+
+Optional sections:
+${renderBulletList(meta.optionalSections)}
+
+Allowed detected signal labels:
+${renderBulletList(meta.requiredSignals)}
+
+Document-specific instructions:
+${meta.documentSpecificInstructions}
+
+Chunk review findings:
+${chunkReviews}
+
+Return JSON with this exact shape (no extra keys):
+{
+  "summary": "<comprehensive summary of the whole document, including purpose, identifiers, dates, signatures, missing sections, and anomalies when present>",
+  "detectedTitle": "<best supported overall document title, or empty string>",
+  "documentTypeMatch": <true|false>,
+  "titleMatch": <true|false>,
+  "titleMatchConfidence": <number between 0 and 1>,
+  "issues": [<short snake_case tags>],
+  "requiredSectionsFound": [<exact labels from the required sections list>],
+  "missingSections": [<exact labels from the required sections list that are not evidenced>],
+  "optionalSectionsFound": [<exact labels from the optional sections list>],
+  "detectedSignals": [<exact labels from the allowed detected signal labels list>],
+  "reviewNotes": "<short final review notes>",
+  "confidence": <number between 0 and 1>
+}`;
+}
+
+export function parseOcrResponse(
+  raw: string,
+  documentType?: DocumentType,
+): OcrPagePayload {
+  const obj = parseJsonObject(raw);
+  const meta = documentType ? getDocumentMeta(documentType) : null;
+
+  return {
+    extractedText:
+      typeof obj.extractedText === 'string' ? obj.extractedText : '',
+    summary: typeof obj.summary === 'string' ? obj.summary : '',
+    detectedTitle:
+      typeof obj.detectedTitle === 'string' ? obj.detectedTitle : '',
+    titleMatch: typeof obj.titleMatch === 'boolean' ? obj.titleMatch : false,
+    titleMatchConfidence: clamp01(obj.titleMatchConfidence),
+    issues: parseSnakeCaseArray(obj.issues),
+    detectedSignals: meta
+      ? normalizeAllowedArray(obj.detectedSignals, meta.requiredSignals)
+      : parseStringArray(obj.detectedSignals),
+    reviewNotes: typeof obj.reviewNotes === 'string' ? obj.reviewNotes : '',
+    confidence: clamp01(obj.confidence),
+  };
+}
+
+export function parseChunkReviewResponse(
+  raw: string,
+  documentType: DocumentType,
+): OcrChunkReviewPayload {
+  const obj = parseJsonObject(raw);
+  const meta = getDocumentMeta(documentType);
+
+  return {
+    summary: typeof obj.summary === 'string' ? obj.summary : '',
+    detectedTitle:
+      typeof obj.detectedTitle === 'string' ? obj.detectedTitle : '',
+    titleMatch: typeof obj.titleMatch === 'boolean' ? obj.titleMatch : false,
+    titleMatchConfidence: clamp01(obj.titleMatchConfidence),
+    issues: parseSnakeCaseArray(obj.issues),
+    requiredSectionsFound: normalizeAllowedArray(
+      obj.requiredSectionsFound,
+      meta.requiredSections,
+    ),
+    optionalSectionsFound: normalizeAllowedArray(
+      obj.optionalSectionsFound,
+      meta.optionalSections,
+    ),
+    detectedSignals: normalizeAllowedArray(
+      obj.detectedSignals,
+      meta.requiredSignals,
+    ),
+    reviewNotes: typeof obj.reviewNotes === 'string' ? obj.reviewNotes : '',
+    confidence: clamp01(obj.confidence),
+  };
+}
+
+export function parseDocumentReviewResponse(
+  raw: string,
+  documentType: DocumentType,
+): OcrEvaluationPayload {
+  const obj = parseJsonObject(raw);
+  const meta = getDocumentMeta(documentType);
+  const requiredSectionsFound = normalizeAllowedArray(
+    obj.requiredSectionsFound,
+    meta.requiredSections,
+  );
+  const modelMissingSections = normalizeAllowedArray(
+    obj.missingSections,
+    meta.requiredSections,
+  );
+  const missingSections = computeMissingSections(
+    meta.requiredSections,
+    requiredSectionsFound,
+    modelMissingSections,
+  );
+  const documentTypeMatch =
+    typeof obj.documentTypeMatch === 'boolean'
+      ? obj.documentTypeMatch
+      : typeof obj.titleMatch === 'boolean'
+        ? obj.titleMatch
+        : false;
+
+  return {
+    extractedText:
+      typeof obj.extractedText === 'string' ? obj.extractedText : '',
+    summary: typeof obj.summary === 'string' ? obj.summary : '',
+    detectedTitle:
+      typeof obj.detectedTitle === 'string' ? obj.detectedTitle : '',
+    documentTypeMatch,
+    titleMatch:
+      typeof obj.titleMatch === 'boolean' ? obj.titleMatch : documentTypeMatch,
+    titleMatchConfidence: clamp01(obj.titleMatchConfidence),
+    issues: parseSnakeCaseArray(obj.issues),
+    requiredSectionsFound,
+    missingSections,
+    optionalSectionsFound: normalizeAllowedArray(
+      obj.optionalSectionsFound,
+      meta.optionalSections,
+    ),
+    detectedSignals: normalizeAllowedArray(
+      obj.detectedSignals,
+      meta.requiredSignals,
+    ),
+    reviewNotes: typeof obj.reviewNotes === 'string' ? obj.reviewNotes : '',
+    confidence: clamp01(obj.confidence),
+  };
+}
+
+export function getDocumentMeta(documentType: DocumentType): DocumentTypeMeta {
+  return (
+    DOCUMENT_TYPE_TITLES[documentType] ??
+    DOCUMENT_TYPE_TITLES[DocumentType.OTHER]
+  );
+}
+
+export function computeMissingSections(
+  requiredSections: string[],
+  requiredSectionsFound: string[],
+  requestedMissingSections: string[] = [],
+): string[] {
+  const found = new Set(
+    requiredSectionsFound.map((item) => item.toLowerCase()),
+  );
+  const requested = new Set(
+    requestedMissingSections.map((item) => item.toLowerCase()),
+  );
+
+  return requiredSections.filter((section) => {
+    const key = section.toLowerCase();
+    return !found.has(key) || requested.has(key);
+  });
+}
+
+function renderBulletList(items: string[]): string {
+  if (items.length === 0) return '- None';
+  return items.map((item) => `- ${item}`).join('\n');
+}
+
+function parseJsonObject(raw: string): Record<string, unknown> {
   const cleaned = stripFences(raw).trim();
   let parsed: unknown;
   try {
@@ -82,27 +375,43 @@ export function parseOcrResponse(raw: string): OcrEvaluationPayload {
   if (!parsed || typeof parsed !== 'object') {
     throw new Error('Ollama response is not a JSON object');
   }
-  const obj = parsed as Record<string, unknown>;
 
-  const extractedText =
-    typeof obj.extractedText === 'string' ? obj.extractedText : '';
-  const summary = typeof obj.summary === 'string' ? obj.summary : '';
-  const titleMatch =
-    typeof obj.titleMatch === 'boolean' ? obj.titleMatch : false;
-  const titleMatchConfidence = clamp01(obj.titleMatchConfidence);
-  const confidence = clamp01(obj.confidence);
-  const issues = Array.isArray(obj.issues)
-    ? obj.issues.filter((v): v is string => typeof v === 'string')
-    : [];
+  return parsed as Record<string, unknown>;
+}
 
-  return {
-    extractedText,
-    summary,
-    titleMatch,
-    titleMatchConfidence,
-    issues,
-    confidence,
-  };
+function parseStringArray(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return Array.from(
+    new Set(
+      value
+        .filter((item): item is string => typeof item === 'string')
+        .map((item) => item.trim())
+        .filter(Boolean),
+    ),
+  );
+}
+
+function parseSnakeCaseArray(value: unknown): string[] {
+  return parseStringArray(value).map((item) =>
+    item
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '_')
+      .replace(/^_+|_+$/g, ''),
+  );
+}
+
+function normalizeAllowedArray(value: unknown, allowed: string[]): string[] {
+  const lookup = new Map(
+    allowed.map((item) => [item.trim().toLowerCase(), item]),
+  );
+
+  return Array.from(
+    new Set(
+      parseStringArray(value)
+        .map((item) => lookup.get(item.trim().toLowerCase()) ?? null)
+        .filter((item): item is string => Boolean(item)),
+    ),
+  );
 }
 
 function clamp01(v: unknown): number {
@@ -113,8 +422,6 @@ function clamp01(v: unknown): number {
   return n;
 }
 
-// Only strip markdown code fences when the WHOLE response is wrapped in them.
-// Avoids mangling responses where a ``` appears inside a JSON string value.
 function stripFences(raw: string): string {
   const trimmed = raw.trim();
   if (!trimmed.startsWith('```')) return raw;
@@ -122,7 +429,6 @@ function stripFences(raw: string): string {
   return m ? m[1] : raw;
 }
 
-// Find the first balanced {...} block, respecting strings/escapes.
 function extractJsonObject(raw: string): string | null {
   const start = raw.indexOf('{');
   if (start === -1) return null;
@@ -147,15 +453,12 @@ function extractJsonObject(raw: string): string | null {
       if (depth === 0) return raw.slice(start, i + 1);
     }
   }
-  // Unterminated — close open structures so we at least get something parseable.
   let patched = raw.slice(start);
   if (inString) patched += '"';
   patched += '}'.repeat(Math.max(depth, 0));
   return patched;
 }
 
-// Best-effort repair for common model mistakes: unescaped control chars
-// inside strings and trailing commas before closers.
 function repairJson(raw: string): string {
   let out = '';
   let inString = false;

@@ -1,6 +1,6 @@
-import { useState } from 'react';
-import { Badge } from '@/components/ui/badge';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { useState } from "react";
+import { Badge } from "@/components/ui/badge";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faArrowsRotate,
   faArrowUpRightFromSquare,
@@ -10,14 +10,14 @@ import {
   faFileLines,
   faTriangleExclamation,
   faXmark,
-} from '@fortawesome/free-solid-svg-icons';
+} from "@fortawesome/free-solid-svg-icons";
 import type {
   ApplicationDocument,
   DocumentOcrStatus,
-} from '@/features/applications/api/types';
-import { DOCUMENT_TYPE_LABELS } from '@/features/documents/constants/documentTypeTitles';
-import { useTriggerManualOcrMutation } from '@/features/applications/api/applicationsApi';
-import { toast } from 'sonner';
+} from "@/features/applications/api/types";
+import { DOCUMENT_TYPE_LABELS } from "@/features/documents/constants/documentTypeTitles";
+import { useTriggerManualOcrMutation } from "@/features/applications/api/applicationsApi";
+import { toast } from "sonner";
 
 interface Props {
   document: ApplicationDocument;
@@ -25,63 +25,82 @@ interface Props {
   compact?: boolean;
   applicationId?: string;
   canTriggerManualOcr?: boolean;
+  showExtractedText?: boolean;
 }
 
 const OCR_STATUS: Record<
   DocumentOcrStatus,
   { label: string; className: string }
 > = {
-  PENDING: { label: 'Pending', className: 'bg-primary/5 text-primary/55' },
-  PROCESSING: { label: 'Processing', className: 'bg-sky-50 text-sky-700' },
-  EXTRACTED: { label: 'Extracted', className: 'bg-emerald-50 text-emerald-700' },
-  FAILED: { label: 'Failed', className: 'bg-red-50 text-red-700' },
+  PENDING: { label: "Pending", className: "bg-primary/5 text-primary/55" },
+  PROCESSING: { label: "Processing", className: "bg-sky-50 text-sky-700" },
+  EXTRACTED: {
+    label: "Extracted",
+    className: "bg-emerald-50 text-emerald-700",
+  },
+  FAILED: { label: "Failed", className: "bg-red-50 text-red-700" },
 };
 
 interface AiScreening {
   summary?: string;
   expectedTitle?: string;
   detectedTitle?: string;
+  documentTypeMatch?: boolean;
   titleMatch?: boolean;
   titleMatchConfidence?: number;
   issues?: string[];
+  requiredSectionsFound?: string[];
+  missingSections?: string[];
+  optionalSectionsFound?: string[];
+  detectedSignals?: string[];
+  reviewNotes?: string;
 }
 
 function parseObject(raw: unknown): Record<string, unknown> {
   if (!raw) return {};
-  if (typeof raw === 'string') {
+  if (typeof raw === "string") {
     try {
       const parsed = JSON.parse(raw) as unknown;
-      return typeof parsed === 'object' && parsed !== null
+      return typeof parsed === "object" && parsed !== null
         ? (parsed as Record<string, unknown>)
         : {};
     } catch {
       return {};
     }
   }
-  if (typeof raw === 'object') return raw as Record<string, unknown>;
+  if (typeof raw === "object") return raw as Record<string, unknown>;
   return {};
 }
 
-function pickString(data: Record<string, unknown>, keys: string[]): string | undefined {
+function pickString(
+  data: Record<string, unknown>,
+  keys: string[],
+): string | undefined {
   for (const key of keys) {
     const value = data[key];
-    if (typeof value === 'string' && value.trim()) return value.trim();
+    if (typeof value === "string" && value.trim()) return value.trim();
   }
   return undefined;
 }
 
-function pickBoolean(data: Record<string, unknown>, keys: string[]): boolean | undefined {
+function pickBoolean(
+  data: Record<string, unknown>,
+  keys: string[],
+): boolean | undefined {
   for (const key of keys) {
     const value = data[key];
-    if (typeof value === 'boolean') return value;
+    if (typeof value === "boolean") return value;
   }
   return undefined;
 }
 
-function pickNumber(data: Record<string, unknown>, keys: string[]): number | undefined {
+function pickNumber(
+  data: Record<string, unknown>,
+  keys: string[],
+): number | undefined {
   for (const key of keys) {
     const value = data[key];
-    if (typeof value === 'number' && Number.isFinite(value)) return value;
+    if (typeof value === "number" && Number.isFinite(value)) return value;
   }
   return undefined;
 }
@@ -93,7 +112,7 @@ function pickStringArray(
   for (const key of keys) {
     const value = data[key];
     if (Array.isArray(value)) {
-      return value.filter((item): item is string => typeof item === 'string');
+      return value.filter((item): item is string => typeof item === "string");
     }
   }
   return undefined;
@@ -105,31 +124,60 @@ function buildScreening(
 ): AiScreening {
   return {
     summary:
-      pickString(primary, ['summary']) ??
-      pickString(secondary, ['summary']),
+      pickString(primary, ["summary"]) ?? pickString(secondary, ["summary"]),
     expectedTitle:
-      pickString(primary, ['expectedTitle', 'expected_title']) ??
-      pickString(secondary, ['expectedTitle', 'expected_title']),
+      pickString(primary, ["expectedTitle", "expected_title"]) ??
+      pickString(secondary, ["expectedTitle", "expected_title"]),
     detectedTitle:
-      pickString(primary, ['detectedTitle', 'detected_title']) ??
-      pickString(secondary, ['detectedTitle', 'detected_title']),
+      pickString(primary, ["detectedTitle", "detected_title"]) ??
+      pickString(secondary, ["detectedTitle", "detected_title"]),
+    documentTypeMatch:
+      pickBoolean(primary, ["documentTypeMatch", "document_type_match"]) ??
+      pickBoolean(secondary, ["documentTypeMatch", "document_type_match"]),
     titleMatch:
-      pickBoolean(primary, ['titleMatch', 'title_match']) ??
-      pickBoolean(secondary, ['titleMatch', 'title_match']),
+      pickBoolean(primary, ["titleMatch", "title_match"]) ??
+      pickBoolean(secondary, ["titleMatch", "title_match"]),
     titleMatchConfidence:
-      pickNumber(primary, ['titleMatchConfidence', 'title_match_confidence']) ??
-      pickNumber(secondary, ['titleMatchConfidence', 'title_match_confidence']),
+      pickNumber(primary, ["titleMatchConfidence", "title_match_confidence"]) ??
+      pickNumber(secondary, ["titleMatchConfidence", "title_match_confidence"]),
     issues:
-      pickStringArray(primary, ['issues']) ??
-      pickStringArray(secondary, ['issues']),
+      pickStringArray(primary, ["issues"]) ??
+      pickStringArray(secondary, ["issues"]),
+    requiredSectionsFound:
+      pickStringArray(primary, [
+        "requiredSectionsFound",
+        "required_sections_found",
+      ]) ??
+      pickStringArray(secondary, [
+        "requiredSectionsFound",
+        "required_sections_found",
+      ]),
+    missingSections:
+      pickStringArray(primary, ["missingSections", "missing_sections"]) ??
+      pickStringArray(secondary, ["missingSections", "missing_sections"]),
+    optionalSectionsFound:
+      pickStringArray(primary, [
+        "optionalSectionsFound",
+        "optional_sections_found",
+      ]) ??
+      pickStringArray(secondary, [
+        "optionalSectionsFound",
+        "optional_sections_found",
+      ]),
+    detectedSignals:
+      pickStringArray(primary, ["detectedSignals", "detected_signals"]) ??
+      pickStringArray(secondary, ["detectedSignals", "detected_signals"]),
+    reviewNotes:
+      pickString(primary, ["reviewNotes", "review_notes"]) ??
+      pickString(secondary, ["reviewNotes", "review_notes"]),
   };
 }
 
 function issueLabel(key: string): string {
   return key
-    .split('_')
+    .split("_")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(' ');
+    .join(" ");
 }
 
 export function DocumentExtractionCard({
@@ -137,6 +185,7 @@ export function DocumentExtractionCard({
   compact,
   applicationId,
   canTriggerManualOcr,
+  showExtractedText = true,
 }: Props) {
   const [showText, setShowText] = useState(false);
   const [triggerManualOcr, { isLoading: isTriggeringManualOcr }] =
@@ -147,18 +196,19 @@ export function DocumentExtractionCard({
     parseObject(document.ocrExtractedData),
   );
   const confidence =
-    typeof document.ocrConfidence === 'number'
+    typeof document.ocrConfidence === "number"
       ? Math.round(
-          (document.ocrConfidence > 1
+          document.ocrConfidence > 1
             ? document.ocrConfidence
-            : document.ocrConfidence * 100),
+            : document.ocrConfidence * 100,
         )
       : null;
   const expectedTitle =
     screening.expectedTitle ?? DOCUMENT_TYPE_LABELS[document.documentType];
+  const titleMatch = screening.titleMatch ?? screening.documentTypeMatch;
   const showManualTrigger =
     Boolean(canTriggerManualOcr && applicationId) &&
-    document.ocrStatus !== 'PROCESSING';
+    document.ocrStatus !== "PROCESSING";
 
   const handleManualTrigger = async () => {
     if (!applicationId) return;
@@ -167,20 +217,20 @@ export function DocumentExtractionCard({
         id: applicationId,
         docId: document.id,
       }).unwrap();
-      toast.success('OCR run triggered.', {
+      toast.success("OCR run triggered.", {
         description: `${document.originalFilename} has been queued for extraction.`,
       });
     } catch (error) {
-      const fallback = 'Failed to trigger OCR extraction.';
+      const fallback = "Failed to trigger OCR extraction.";
       const data =
-        typeof error === 'object' && error !== null && 'data' in error
+        typeof error === "object" && error !== null && "data" in error
           ? (error as { data?: unknown }).data
           : undefined;
       const message =
-        typeof data === 'object' &&
+        typeof data === "object" &&
         data !== null &&
-        'message' in data &&
-        typeof (data as { message?: unknown }).message === 'string'
+        "message" in data &&
+        typeof (data as { message?: unknown }).message === "string"
           ? (data as { message: string }).message
           : fallback;
       toast.error(message);
@@ -213,7 +263,7 @@ export function DocumentExtractionCard({
               className="inline-flex items-center gap-1 rounded-sm border border-primary/15 px-2 py-0.5 text-[10px] text-primary/65 hover:bg-primary/5 disabled:cursor-not-allowed disabled:opacity-50"
             >
               <FontAwesomeIcon icon={faArrowsRotate} className="size-2.5" />
-              {isTriggeringManualOcr ? 'Running...' : 'Run OCR'}
+              {isTriggeringManualOcr ? "Running..." : "Run OCR"}
             </button>
           )}
           <Badge
@@ -239,11 +289,11 @@ export function DocumentExtractionCard({
         </div>
       </header>
 
-      {document.ocrStatus === 'EXTRACTED' ? (
+      {document.ocrStatus === "EXTRACTED" ? (
         <div className="space-y-3 px-4 py-4">
           <div className="flex flex-wrap items-center gap-3 text-[11.5px]">
             <TitleMatch
-              match={screening.titleMatch}
+              match={titleMatch}
               expected={expectedTitle ?? null}
               detected={screening.detectedTitle ?? null}
               confidence={screening.titleMatchConfidence}
@@ -276,7 +326,49 @@ export function DocumentExtractionCard({
             </blockquote>
           )}
 
-          {!compact && document.ocrExtractedText && (
+          {screening.reviewNotes && (
+            <div className="rounded-sm border border-primary/8 bg-primary/3 px-3 py-2 text-[11.5px] leading-relaxed text-primary/70">
+              {screening.reviewNotes}
+            </div>
+          )}
+
+          {screening.requiredSectionsFound &&
+            screening.requiredSectionsFound.length > 0 && (
+              <ChecklistGroup
+                label="Required sections found"
+                items={screening.requiredSectionsFound}
+                className="border-emerald-200 bg-emerald-50 text-emerald-800"
+              />
+            )}
+
+          {screening.missingSections &&
+            screening.missingSections.length > 0 && (
+              <ChecklistGroup
+                label="Missing or not evidenced"
+                items={screening.missingSections}
+                className="border-rose-200 bg-rose-50 text-rose-800"
+              />
+            )}
+
+          {screening.optionalSectionsFound &&
+            screening.optionalSectionsFound.length > 0 && (
+              <ChecklistGroup
+                label="Optional sections found"
+                items={screening.optionalSectionsFound}
+                className="border-sky-200 bg-sky-50 text-sky-800"
+              />
+            )}
+
+          {screening.detectedSignals &&
+            screening.detectedSignals.length > 0 && (
+              <ChecklistGroup
+                label="Detected signals"
+                items={screening.detectedSignals}
+                className="border-primary/15 bg-primary/5 text-primary/75"
+              />
+            )}
+
+          {!compact && showExtractedText && document.ocrExtractedText && (
             <div className="border-t border-primary/8 pt-3">
               <button
                 type="button"
@@ -287,9 +379,9 @@ export function DocumentExtractionCard({
                   icon={showText ? faChevronDown : faChevronRight}
                   className="size-2.5"
                 />
-                {showText ? 'Hide extracted text' : 'View extracted text'}
+                {showText ? "Hide extracted text" : "View extracted text"}
                 <span className="text-primary/35 normal-case">
-                  ({document.pageCount ?? '?'} pages)
+                  ({document.pageCount ?? "?"} pages)
                 </span>
               </button>
               {showText && (
@@ -302,14 +394,42 @@ export function DocumentExtractionCard({
         </div>
       ) : (
         <div className="px-4 py-4 text-[12px] text-primary/55">
-          {document.ocrStatus === 'FAILED' && document.ocrErrorMessage
+          {document.ocrStatus === "FAILED" && document.ocrErrorMessage
             ? document.ocrErrorMessage
-            : document.ocrStatus === 'PROCESSING'
-              ? 'Extraction in progress…'
-              : 'Extraction not yet run.'}
+            : document.ocrStatus === "PROCESSING"
+              ? "Extraction in progress…"
+              : "Extraction not yet run."}
         </div>
       )}
     </article>
+  );
+}
+
+function ChecklistGroup({
+  label,
+  items,
+  className,
+}: {
+  label: string;
+  items: string[];
+  className: string;
+}) {
+  return (
+    <div className="space-y-1.5">
+      <p className="text-[10.5px] font-medium tracking-wider text-primary/45 uppercase">
+        {label}
+      </p>
+      <div className="flex flex-wrap gap-1.5">
+        {items.map((item) => (
+          <span
+            key={`${label}-${item}`}
+            className={`inline-flex items-center rounded-full border px-2 py-0.5 text-[10px] ${className}`}
+          >
+            {item}
+          </span>
+        ))}
+      </div>
+    </div>
   );
 }
 
@@ -326,34 +446,32 @@ function TitleMatch({
 }) {
   if (match === undefined || !expected) return null;
   const pct =
-    typeof confidence === 'number'
-      ? Math.round((confidence > 1 ? confidence : confidence * 100))
+    typeof confidence === "number"
+      ? Math.round(confidence > 1 ? confidence : confidence * 100)
       : null;
   return (
     <div className="flex items-center gap-1.5">
       <span
         className={`inline-flex size-5 items-center justify-center rounded-full text-[10px] ${
-          match
-            ? 'bg-emerald-50 text-emerald-700'
-            : 'bg-red-50 text-red-700'
+          match ? "bg-emerald-50 text-emerald-700" : "bg-red-50 text-red-700"
         }`}
-        aria-label={match ? 'Title matches' : 'Title does not match'}
+        aria-label={match ? "Title matches" : "Title does not match"}
       >
-        <FontAwesomeIcon icon={match ? faCheck : faXmark} className="size-2.5" />
+        <FontAwesomeIcon
+          icon={match ? faCheck : faXmark}
+          className="size-2.5"
+        />
       </span>
       <span className="text-primary/60">
-        Expected{' '}
-        <span className="text-primary">&ldquo;{expected}&rdquo;</span>
+        Expected <span className="text-primary">&ldquo;{expected}&rdquo;</span>
         {detected && (
           <>
-            {' '}
-            vs detected{' '}
+            {" "}
+            vs detected{" "}
             <span className="text-primary">&ldquo;{detected}&rdquo;</span>
           </>
         )}
-        {pct !== null && (
-          <span className="ml-1 text-primary/40">({pct}%)</span>
-        )}
+        {pct !== null && <span className="ml-1 text-primary/40">({pct}%)</span>}
       </span>
     </div>
   );
@@ -362,10 +480,10 @@ function TitleMatch({
 function ConfidenceMeter({ value, label }: { value: number; label: string }) {
   const tone =
     value >= 80
-      ? 'bg-emerald-500'
+      ? "bg-emerald-500"
       : value >= 55
-        ? 'bg-amber-500'
-        : 'bg-red-500';
+        ? "bg-amber-500"
+        : "bg-red-500";
   return (
     <div className="flex min-w-[160px] flex-1 items-center gap-2">
       <span className="text-[10px] font-medium tracking-wider text-primary/45 uppercase">
