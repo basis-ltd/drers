@@ -181,4 +181,75 @@ describe('OcrService', () => {
 
     expect(tag).toBe('ollama_page_timeout');
   });
+
+  it('disables all Ollama stage timeout enforcement via single toggle flag', () => {
+    const service = createService({
+      OCR_OLLAMA_ENABLE_TIMEOUTS: 'false',
+      OCR_OLLAMA_FIRST_PAGE_TIMEOUT_MS: '120000',
+      OCR_OLLAMA_PAGE_TIMEOUT_MS: '240000',
+      OCR_OLLAMA_REVIEW_TIMEOUT_MS: '300000',
+      OCR_OLLAMA_SYNTHESIS_TIMEOUT_MS: '360000',
+    });
+
+    expect(
+      (service as OcrService & { ollamaTimeoutsEnabled: boolean })
+        .ollamaTimeoutsEnabled,
+    ).toBe(false);
+  });
+
+  it('uses provided stage timeout values when timeout flag is enabled', () => {
+    const service = createService({
+      OCR_OLLAMA_ENABLE_TIMEOUTS: 'true',
+      OCR_OLLAMA_FIRST_PAGE_TIMEOUT_MS: '120000',
+      OCR_OLLAMA_PAGE_TIMEOUT_MS: '240000',
+      OCR_OLLAMA_REVIEW_TIMEOUT_MS: '300000',
+      OCR_OLLAMA_SYNTHESIS_TIMEOUT_MS: '360000',
+    });
+
+    expect(
+      (service as OcrService & { ollamaFirstPageTimeoutMs: number })
+        .ollamaFirstPageTimeoutMs,
+    ).toBe(120000);
+    expect(
+      (service as OcrService & { ollamaPageTimeoutMs: number })
+        .ollamaPageTimeoutMs,
+    ).toBe(240000);
+    expect(
+      (service as OcrService & { ollamaReviewTimeoutMs: number })
+        .ollamaReviewTimeoutMs,
+    ).toBe(300000);
+    expect(
+      (service as OcrService & { ollamaSynthesisTimeoutMs: number })
+        .ollamaSynthesisTimeoutMs,
+    ).toBe(360000);
+  });
+
+  it('does not emit Ollama timeout tags when timeout flag is disabled', () => {
+    const service = createService({
+      OCR_OLLAMA_ENABLE_TIMEOUTS: 'false',
+    });
+    const tag = (
+      service as OcrService & {
+        extractTimeoutReasonTag: (err: unknown) => string | null;
+      }
+    ).extractTimeoutReasonTag(
+      new Error(
+        'Ollama request failed during page OCR 1/1 at http://localhost:11434: timed out after 120000ms',
+      ),
+    );
+    expect(tag).toBeNull();
+  });
+
+  it('does not expose provider timeout signal when timeout flag is disabled', () => {
+    const service = createService({
+      OCR_OLLAMA_ENABLE_TIMEOUTS: 'false',
+    });
+    (
+      service as OcrService & {
+        lastProviderTimeoutAt: number;
+      }
+    ).lastProviderTimeoutAt = Date.now();
+
+    expect(service.hasRecentProviderTimeoutSignal()).toBe(false);
+  });
 });

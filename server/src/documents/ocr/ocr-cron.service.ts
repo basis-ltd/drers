@@ -121,13 +121,23 @@ export class OcrCronService implements OnModuleInit {
   }
 
   private async isProviderReachable(): Promise<boolean> {
+    const now = Date.now();
     if (this.ocrService.hasRecentProviderTimeoutSignal()) {
+      if (
+        this.lastProviderCheckAt > 0 &&
+        now - this.lastProviderCheckAt < this.providerCheckIntervalMs
+      ) {
+        return false;
+      }
+      this.lastProviderCheckAt = now;
+      this.lastProviderCheckOk = false;
+      this.lastProviderCheckMessage =
+        'recent provider timeout signal from OCR pipeline';
       this.registerProviderFailure(
         'recent provider timeout signal from OCR pipeline',
       );
       return false;
     }
-    const now = Date.now();
     if (
       this.lastProviderCheckAt > 0 &&
       now - this.lastProviderCheckAt < this.providerCheckIntervalMs

@@ -118,6 +118,24 @@ describe('OcrCronService', () => {
     ).toBeGreaterThan(Date.now());
   });
 
+  it('throttles provider-timeout-signal failures by check interval', async () => {
+    const { service, ocrService } = createService({
+      OCR_CRON_ENABLED: 'true',
+      OCR_PROVIDER_FAILURE_THRESHOLD: '2',
+      OCR_PROVIDER_CHECK_INTERVAL_MS: '60000',
+    });
+    ocrService.hasRecentProviderTimeoutSignal.mockReturnValue(true);
+
+    await service.tick();
+    await service.tick();
+
+    expect(ocrService.checkProviderReachable).not.toHaveBeenCalled();
+    expect(
+      (service as OcrCronService & { consecutiveProviderFailures: number })
+        .consecutiveProviderFailures,
+    ).toBe(1);
+  });
+
   it('requeues stale processing documents before picking next', async () => {
     const staleDoc = {
       id: 'stale-doc-id',
