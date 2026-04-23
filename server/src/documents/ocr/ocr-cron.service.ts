@@ -20,6 +20,11 @@ export class OcrCronService implements OnModuleInit {
   private lastProviderCheckAt = 0;
   private lastProviderCheckOk = true;
   private lastProviderCheckMessage = '';
+  private providerFailureThreshold = 2;
+  private providerCooldownMs = 180000;
+  private providerCooldownUntil = 0;
+  private consecutiveProviderFailures = 0;
+  private logPgTraceDeprecationHint = false;
 
   constructor(
     @InjectRepository(Document)
@@ -45,9 +50,27 @@ export class OcrCronService implements OnModuleInit {
       'OCR_PROVIDER_CHECK_INTERVAL_MS',
       60000,
     );
-    this.logger.log(
-      `OCR cron ${this.enabled ? 'enabled' : 'disabled'} (maxAttempts=${this.maxAttempts}, staleProcessingMinutes=${this.staleProcessingMinutes}, providerCheckIntervalMs=${this.providerCheckIntervalMs})`,
+    this.providerFailureThreshold = this.readPositiveIntConfig(
+      'OCR_PROVIDER_FAILURE_THRESHOLD',
+      2,
     );
+    this.providerCooldownMs = this.readPositiveIntConfig(
+      'OCR_PROVIDER_TIMEOUT_COOLDOWN_MS',
+      180000,
+    );
+    this.logPgTraceDeprecationHint =
+      this.configService.get<string>(
+        'OCR_LOG_PG_TRACE_DEPRECATION_HINT',
+        'false',
+      ) === 'true';
+    this.logger.log(
+      `OCR cron ${this.enabled ? 'enabled' : 'disabled'} (maxAttempts=${this.maxAttempts}, staleProcessingMinutes=${this.staleProcessingMinutes}, providerCheckIntervalMs=${this.providerCheckIntervalMs}, providerFailureThreshold=${this.providerFailureThreshold}, providerCooldownMs=${this.providerCooldownMs})`,
+    );
+    if (this.logPgTraceDeprecationHint) {
+      this.logger.warn(
+        'PG query concurrency warning trace hint: run with NODE_OPTIONS="--trace-deprecation" to identify the exact call site if warnings persist.',
+      );
+    }
     if (this.requeueAuthFailuresOnBoot) {
       void this.ocrService
         .requeueFailedDownloadAuthErrors()
@@ -67,6 +90,12 @@ export class OcrCronService implements OnModuleInit {
   @Cron(CronExpression.EVERY_MINUTE)
   async tick(): Promise<void> {
     if (!this.enabled) return;
+    if (Date.now() < this.providerCooldownUntil) {
+      this.logger.warn(
+        `Provider cooldown active; skipping OCR tick for another ${this.providerCooldownUntil - Date.now()}ms`,
+      );
+      return;
+    }
     if (this.isRunning) {
       this.logger.debug('Previous tick still running — skipping');
       return;
@@ -92,6 +121,12 @@ export class OcrCronService implements OnModuleInit {
   }
 
   private async isProviderReachable(): Promise<boolean> {
+    if (this.ocrService.hasRecentProviderTimeoutSignal()) {
+      this.registerProviderFailure(
+        'recent provider timeout signal from OCR pipeline',
+      );
+      return false;
+    }
     const now = Date.now();
     if (
       this.lastProviderCheckAt > 0 &&
@@ -105,11 +140,27 @@ export class OcrCronService implements OnModuleInit {
     this.lastProviderCheckOk = result.ok;
     this.lastProviderCheckMessage = result.message;
     if (!result.ok) {
+      this.registerProviderFailure(result.message);
       this.logger.warn(`Skipping OCR tick: ${result.message}`);
     } else if (!wasOk && this.lastProviderCheckMessage) {
+      this.consecutiveProviderFailures = 0;
+      this.providerCooldownUntil = 0;
       this.logger.log(`OCR provider recovered: ${result.message}`);
+    } else {
+      this.consecutiveProviderFailures = 0;
     }
     return result.ok;
+  }
+
+  private registerProviderFailure(reason: string): void {
+    this.consecutiveProviderFailures += 1;
+    if (this.consecutiveProviderFailures < this.providerFailureThreshold) {
+      return;
+    }
+    this.providerCooldownUntil = Date.now() + this.providerCooldownMs;
+    this.logger.warn(
+      `Entering provider cooldown after ${this.consecutiveProviderFailures} consecutive failures: ${reason}`,
+    );
   }
 
   private async requeueStaleProcessingDocuments(): Promise<void> {

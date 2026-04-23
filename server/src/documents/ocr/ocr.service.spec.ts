@@ -114,4 +114,71 @@ describe('OcrService', () => {
     expect(result.message).toContain('health check failed');
     expect(result.message).toContain('connect timeout');
   });
+
+  it('caps OCR pages when runtime page cap is exceeded', () => {
+    const service = createService({
+      OCR_RUNTIME_PAGE_CAP: '2',
+      OCR_OVERSIZED_PDF_STRATEGY: 'cap',
+      OCR_OVERSIZED_PDF_THRESHOLD_PAGES: '120',
+    });
+    const images = [Buffer.from('a'), Buffer.from('b'), Buffer.from('c')];
+
+    const policy = (
+      service as OcrService & {
+        applyRuntimePagePolicy: (
+          images: Buffer[],
+          pageCount: number | null,
+          documentType: string,
+        ) => {
+          images: Buffer[];
+          appliedPageCap: number | null;
+          oversizedDeferred: boolean;
+          policy: string;
+        };
+      }
+    ).applyRuntimePagePolicy(images, 3, 'PROTOCOL');
+
+    expect(policy.images).toHaveLength(2);
+    expect(policy.appliedPageCap).toBe(2);
+    expect(policy.oversizedDeferred).toBe(false);
+    expect(policy.policy).toBe('runtime_page_cap');
+  });
+
+  it('defers oversized documents when strategy is defer', () => {
+    const service = createService({
+      OCR_OVERSIZED_PDF_STRATEGY: 'defer',
+      OCR_OVERSIZED_PDF_THRESHOLD_PAGES: '100',
+      OCR_RUNTIME_PAGE_CAP: '30',
+    });
+    const images = Array.from({ length: 5 }, () => Buffer.from('x'));
+
+    const policy = (
+      service as OcrService & {
+        applyRuntimePagePolicy: (
+          images: Buffer[],
+          pageCount: number | null,
+          documentType: string,
+        ) => { oversizedDeferred: boolean; policy: string; images: Buffer[] };
+      }
+    ).applyRuntimePagePolicy(images, 150, 'PROTOCOL');
+
+    expect(policy.oversizedDeferred).toBe(true);
+    expect(policy.policy).toBe('oversized_defer');
+    expect(policy.images).toHaveLength(0);
+  });
+
+  it('classifies stage-specific timeout tags', () => {
+    const service = createService();
+    const timeoutError = new Error(
+      'Ollama request failed during page OCR 1/10 at http://localhost:11434: timed out after 120000ms',
+    );
+
+    const tag = (
+      service as OcrService & {
+        extractTimeoutReasonTag: (err: unknown) => string | null;
+      }
+    ).extractTimeoutReasonTag(timeoutError);
+
+    expect(tag).toBe('ollama_page_timeout');
+  });
 });

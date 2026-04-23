@@ -45,6 +45,7 @@ describe('OcrCronService', () => {
       checkProviderReachable: jest.fn(),
       processDocument: jest.fn(),
       requeueFailedDownloadAuthErrors: jest.fn().mockResolvedValue(0),
+      hasRecentProviderTimeoutSignal: jest.fn().mockReturnValue(false),
     } as unknown as OcrService;
     const configService = {
       get: jest.fn((key: string, defaultValue?: string) => {
@@ -66,6 +67,7 @@ describe('OcrCronService', () => {
       ocrService: ocrService as unknown as {
         checkProviderReachable: jest.Mock;
         processDocument: jest.Mock;
+        hasRecentProviderTimeoutSignal: jest.Mock;
       },
       staleQb,
       pickQb,
@@ -90,6 +92,30 @@ describe('OcrCronService', () => {
     expect(ocrService.checkProviderReachable).toHaveBeenCalledTimes(1);
     expect(ocrService.processDocument).not.toHaveBeenCalled();
     expect(repo.createQueryBuilder).toHaveBeenCalledTimes(1);
+  });
+
+  it('enters provider cooldown after consecutive failures', async () => {
+    const { service, ocrService } = createService({
+      OCR_CRON_ENABLED: 'true',
+      OCR_PROVIDER_FAILURE_THRESHOLD: '2',
+      OCR_PROVIDER_TIMEOUT_COOLDOWN_MS: '60000',
+      OCR_PROVIDER_CHECK_INTERVAL_MS: '1',
+    });
+    ocrService.checkProviderReachable.mockResolvedValue({
+      ok: false,
+      message: 'timed out',
+    });
+
+    await service.tick();
+    (
+      service as OcrCronService & { lastProviderCheckAt: number }
+    ).lastProviderCheckAt = 0;
+    await service.tick();
+
+    expect(
+      (service as OcrCronService & { providerCooldownUntil: number })
+        .providerCooldownUntil,
+    ).toBeGreaterThan(Date.now());
   });
 
   it('requeues stale processing documents before picking next', async () => {
