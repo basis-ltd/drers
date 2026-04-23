@@ -25,6 +25,7 @@ export interface AuditStore {
   httpPath: string;
   startedAt: number;
   bodySnapshot: Record<string, unknown> | null;
+  querySnapshot: Record<string, unknown> | null;
   pendingRows: PendingAuditRow[];
   currentOperation: string | null;
 }

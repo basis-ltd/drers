@@ -8,6 +8,9 @@ import { AuditLayer } from '../enums/audit-layer.enum';
 @Index('idx_audit_logs_correlation', ['correlationId'])
 @Index('idx_audit_logs_actor', ['createdById', 'createdAt'])
 @Index('idx_audit_logs_tenant', ['tenantId', 'createdAt'])
+@Index('idx_audit_logs_action_created_at', ['action', 'createdAt'])
+@Index('idx_audit_logs_http_method_created_at', ['httpMethod', 'createdAt'])
+@Index('idx_audit_logs_http_status_created_at', ['httpStatus', 'createdAt'])
 export class AuditLog extends BaseDomain {
   @Column({ name: 'correlation_id', type: 'varchar', length: 128 })
   correlationId: string;
@@ -53,6 +56,9 @@ export class AuditLog extends BaseDomain {
 
   @Column({ name: 'body_snapshot', type: 'jsonb', nullable: true })
   bodySnapshot: Record<string, unknown> | null;
+
+  @Column({ name: 'query_snapshot', type: 'jsonb', nullable: true })
+  querySnapshot: Record<string, unknown> | null;
 
   @Column({ name: 'tenant_id', type: 'uuid', nullable: true })
   tenantId: string | null;
