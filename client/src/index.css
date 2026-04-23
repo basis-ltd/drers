@@ -6,16 +6,18 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  --color-brand-950: #011627;
-  --color-brand-900: #02203a;
-  --color-brand-800: #0a3150;
-  --color-brand-700: #114364;
+  --color-brand-950: #021b2f;
+  --color-brand-900: #03253f;
+  --color-brand-800: #0b3351;
+  --color-brand-700: #134566;
   --color-brand-600: #1a5678;
   --color-brand-500: #2d6a8c;
   --color-brand-400: #4c87a8;
   --color-brand-300: #84b3cf;
   --color-brand-200: #bdd8e8;
   --color-brand-100: #e8f2f8;
+
+  --color-secondary-accent: #0d314b;
 
   --color-bg-canvas: #fcfcff;
   --color-bg-surface: #ffffff;
