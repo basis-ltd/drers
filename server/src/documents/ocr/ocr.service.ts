@@ -109,18 +109,10 @@ export class OcrService {
   private readonly reviewExcerptMaxChars = 500;
   private readonly extractedTextMaxChars = 120000;
   private readonly downloadTimeoutMs: number;
-  private readonly ollamaRequestTimeoutMs: number;
   private readonly providerHealthcheckTimeoutMs: number;
-  private readonly ollamaTimeoutsEnabled: boolean;
-  private readonly ollamaFirstPageTimeoutMs: number;
-  private readonly ollamaPageTimeoutMs: number;
-  private readonly ollamaReviewTimeoutMs: number;
-  private readonly ollamaSynthesisTimeoutMs: number;
   private readonly runtimePageCap: number;
   private readonly oversizedPdfThresholdPages: number;
   private readonly oversizedPdfStrategy: 'cap' | 'defer';
-  private readonly providerTimeoutSignalTtlMs: number;
-  private lastProviderTimeoutAt = 0;
 
   constructor(
     @InjectRepository(Document)
@@ -146,32 +138,9 @@ export class OcrService {
       'OCR_DOWNLOAD_TIMEOUT_MS',
       45000,
     );
-    this.ollamaRequestTimeoutMs = this.readPositiveIntConfig(
-      'OCR_OLLAMA_REQUEST_TIMEOUT_MS',
-      120000,
-    );
     this.providerHealthcheckTimeoutMs = this.readPositiveIntConfig(
       'OCR_PROVIDER_HEALTHCHECK_TIMEOUT_MS',
       5000,
-    );
-    this.ollamaTimeoutsEnabled =
-      this.configService.get<string>('OCR_OLLAMA_ENABLE_TIMEOUTS', 'true') !==
-      'false';
-    this.ollamaFirstPageTimeoutMs = this.readPositiveIntConfig(
-      'OCR_OLLAMA_FIRST_PAGE_TIMEOUT_MS',
-      this.ollamaRequestTimeoutMs,
-    );
-    this.ollamaPageTimeoutMs = this.readPositiveIntConfig(
-      'OCR_OLLAMA_PAGE_TIMEOUT_MS',
-      this.ollamaRequestTimeoutMs,
-    );
-    this.ollamaReviewTimeoutMs = this.readPositiveIntConfig(
-      'OCR_OLLAMA_REVIEW_TIMEOUT_MS',
-      this.ollamaRequestTimeoutMs,
-    );
-    this.ollamaSynthesisTimeoutMs = this.readPositiveIntConfig(
-      'OCR_OLLAMA_SYNTHESIS_TIMEOUT_MS',
-      this.ollamaRequestTimeoutMs,
     );
     this.runtimePageCap = this.readPositiveIntConfig(
       'OCR_RUNTIME_PAGE_CAP',
@@ -186,10 +155,6 @@ export class OcrService {
       .toLowerCase()
       .trim();
     this.oversizedPdfStrategy = oversizedStrategy === 'defer' ? 'defer' : 'cap';
-    this.providerTimeoutSignalTtlMs = this.readPositiveIntConfig(
-      'OCR_PROVIDER_TIMEOUT_SIGNAL_TTL_MS',
-      180000,
-    );
     this.signedDeliveryEnabled =
       this.configService.get<string>('OCR_SIGNED_DELIVERY_ENABLED', 'true') !==
       'false';
@@ -224,7 +189,7 @@ export class OcrService {
       );
     }
     this.logger.log(
-      `OCR configured (host=${this.describeHostForLog(this.ollamaHost)}, model=${this.model}, downloadTimeoutMs=${this.downloadTimeoutMs}, ollamaTimeoutsEnabled=${this.ollamaTimeoutsEnabled}, firstPageTimeoutMs=${this.ollamaFirstPageTimeoutMs}, pageTimeoutMs=${this.ollamaPageTimeoutMs}, reviewTimeoutMs=${this.ollamaReviewTimeoutMs}, synthesisTimeoutMs=${this.ollamaSynthesisTimeoutMs}, runtimePageCap=${this.runtimePageCap}, oversizedThreshold=${this.oversizedPdfThresholdPages}, oversizedStrategy=${this.oversizedPdfStrategy})`,
+      `OCR configured (host=${this.describeHostForLog(this.ollamaHost)}, model=${this.model}, downloadTimeoutMs=${this.downloadTimeoutMs}, runtimePageCap=${this.runtimePageCap}, oversizedThreshold=${this.oversizedPdfThresholdPages}, oversizedStrategy=${this.oversizedPdfStrategy})`,
     );
   }
 
@@ -350,9 +315,6 @@ export class OcrService {
         updatedContext.lastTimeoutTag = timeoutTag;
         updatedContext.lastTimeoutAt = new Date().toISOString();
         updatedContext.lastFailureReason = timeoutTag;
-        if (timeoutTag.startsWith('ollama_')) {
-          this.lastProviderTimeoutAt = Date.now();
-        }
       }
       if (oversizedDeferred && err instanceof OcrOversizedDocumentError) {
         updatedContext.lastFailureReason = 'oversized_document_deferred';
@@ -468,14 +430,6 @@ export class OcrService {
         message: `Ollama health check failed at ${this.describeHostForLog(this.ollamaHost)}: ${this.formatErrorDetails(err)}`,
       };
     }
-  }
-
-  hasRecentProviderTimeoutSignal(): boolean {
-    if (!this.hasOllamaStageTimeoutsEnabled()) return false;
-    if (this.lastProviderTimeoutAt <= 0) return false;
-    return (
-      Date.now() - this.lastProviderTimeoutAt < this.providerTimeoutSignalTtlMs
-    );
   }
 
   private async markFailed(
@@ -807,9 +761,6 @@ export class OcrService {
         ],
       },
       `page OCR ${pageIndex + 1}/${pageTotal}`,
-      pageIndex === 0
-        ? this.ollamaFirstPageTimeoutMs
-        : this.ollamaPageTimeoutMs,
     );
     const content = response.message?.content ?? '';
     try {
@@ -861,7 +812,6 @@ export class OcrService {
         ],
       },
       `document review chunk ${chunkIndex + 1}/${chunkTotal}`,
-      this.ollamaReviewTimeoutMs,
     );
     const content = response.message?.content ?? '';
     try {
@@ -904,7 +854,6 @@ export class OcrService {
         ],
       },
       'document review synthesis',
-      this.ollamaSynthesisTimeoutMs,
     );
     const content = response.message?.content ?? '';
     try {
@@ -924,15 +873,9 @@ export class OcrService {
   private async chatWithOllama(
     payload: ChatRequest & { stream: false },
     stage: string,
-    timeoutMs: number,
   ): Promise<ChatResponse> {
     try {
-      const effectiveTimeoutMs = this.ollamaTimeoutsEnabled ? timeoutMs : 0;
-      return await this.withTimeout(
-        () => this.ollama.chat(payload),
-        effectiveTimeoutMs,
-        `Ollama ${stage}`,
-      );
+      return await this.ollama.chat(payload);
     } catch (err) {
       throw new OcrProviderUnavailableError(
         `Ollama request failed during ${stage} at ${this.describeHostForLog(this.ollamaHost)}: ${this.formatErrorDetails(err)}`,
@@ -951,27 +894,6 @@ export class OcrService {
         ? AbortSignal.timeout(timeoutMs)
         : undefined;
     return fetch(url, signal ? { signal } : undefined);
-  }
-
-  private async withTimeout<T>(
-    factory: () => Promise<T>,
-    timeoutMs: number,
-    label: string,
-  ): Promise<T> {
-    if (timeoutMs <= 0) {
-      return factory();
-    }
-    let timeoutHandle: NodeJS.Timeout | undefined;
-    const timeoutPromise = new Promise<T>((_, reject) => {
-      timeoutHandle = setTimeout(() => {
-        reject(new Error(`${label} timed out after ${timeoutMs}ms`));
-      }, timeoutMs);
-    });
-    try {
-      return await Promise.race([factory(), timeoutPromise]);
-    } finally {
-      if (timeoutHandle) clearTimeout(timeoutHandle);
-    }
   }
 
   private resolveOllamaHost(): string {
@@ -1101,25 +1023,8 @@ export class OcrService {
   private extractTimeoutReasonTag(err: unknown): string | null {
     const message = this.formatErrorDetails(err).toLowerCase();
     if (!message.includes('timed out')) return null;
-    const isOllamaStageTimeoutMessage =
-      message.includes('page ocr') ||
-      message.includes('document review chunk') ||
-      message.includes('document review synthesis');
-    if (isOllamaStageTimeoutMessage && !this.hasOllamaStageTimeoutsEnabled()) {
-      return null;
-    }
-    if (message.includes('page ocr')) return 'ollama_page_timeout';
-    if (message.includes('document review chunk'))
-      return 'ollama_review_timeout';
-    if (message.includes('document review synthesis')) {
-      return 'ollama_synthesis_timeout';
-    }
     if (message.includes('network failure via')) return 'download_timeout';
     return 'generic_timeout';
-  }
-
-  private hasOllamaStageTimeoutsEnabled(): boolean {
-    return this.ollamaTimeoutsEnabled;
   }
 
   private buildReviewChunks(pages: OcrPagePayload[]): string[] {

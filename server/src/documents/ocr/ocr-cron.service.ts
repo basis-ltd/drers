@@ -15,7 +15,7 @@ export class OcrCronService implements OnModuleInit {
   private enabled = true;
   private maxAttempts = 3;
   private requeueAuthFailuresOnBoot = false;
-  private staleProcessingMinutes = 30;
+  private staleProcessingMinutes = 240;
   private providerCheckIntervalMs = 60000;
   private lastProviderCheckAt = 0;
   private lastProviderCheckOk = true;
@@ -44,7 +44,7 @@ export class OcrCronService implements OnModuleInit {
       ) === 'true';
     this.staleProcessingMinutes = this.readPositiveIntConfig(
       'OCR_PROCESSING_STALE_MINUTES',
-      30,
+      240,
     );
     this.providerCheckIntervalMs = this.readPositiveIntConfig(
       'OCR_PROVIDER_CHECK_INTERVAL_MS',
@@ -122,22 +122,6 @@ export class OcrCronService implements OnModuleInit {
 
   private async isProviderReachable(): Promise<boolean> {
     const now = Date.now();
-    if (this.ocrService.hasRecentProviderTimeoutSignal()) {
-      if (
-        this.lastProviderCheckAt > 0 &&
-        now - this.lastProviderCheckAt < this.providerCheckIntervalMs
-      ) {
-        return false;
-      }
-      this.lastProviderCheckAt = now;
-      this.lastProviderCheckOk = false;
-      this.lastProviderCheckMessage =
-        'recent provider timeout signal from OCR pipeline';
-      this.registerProviderFailure(
-        'recent provider timeout signal from OCR pipeline',
-      );
-      return false;
-    }
     if (
       this.lastProviderCheckAt > 0 &&
       now - this.lastProviderCheckAt < this.providerCheckIntervalMs
